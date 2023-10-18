@@ -1,0 +1,163 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ddit.proj.mapper.SubjectMapper">
+
+	<!-- 과목 리스트 조회 (페이징) -->
+	<select id="listSubj" resultType="SubjectVO" parameterType="hashMap">
+	    SELECT *
+	    FROM (
+	        SELECT s.sub_code
+	             , d.dep_nm
+	             , s.dep_code
+	             , s.sub_nm
+	             , s.sub_yr
+	             , s.sub_se_code
+	             , s.sub_del_yn
+	             , ROW_NUMBER() OVER (ORDER BY d.dep_nm, s.sub_code) AS row_num
+	        FROM subject s
+	        INNER JOIN department d ON s.dep_code = d.dep_code
+	        WHERE s.sub_del_yn = 'N'
+	        <include refid="and"></include>
+	    )
+	    WHERE row_num BETWEEN #{startRow} AND #{endRow}
+	</select>
+	
+	<!-- 키워드 검색 조건 -->
+	<sql id="and">
+	    <if test="keyword != null and keyword != ''">
+	        AND (
+	            sub_nm LIKE '%' || #{keyword} || '%'
+	            OR dep_nm LIKE '%' || #{keyword} || '%'
+	            OR sub_se_code LIKE '%' || #{keyword} || '%'
+	        )
+	    </if>
+	</sql>
+
+	<!-- 과목 검색 -->
+	<select id="searchSubj" resultType="SubjectVO" parameterType="String">
+	    SELECT s.sub_code
+	         , d.dep_nm
+	         , s.dep_code
+	         , s.sub_nm
+	         , s.sub_yr
+	         , s.sub_se_code
+	         , s.sub_del_yn 
+	    FROM subject s
+	    INNER JOIN department d ON s.dep_code = d.dep_code
+	    WHERE sub_del_yn = 'N'
+	    AND (
+	        sub_nm LIKE '%' || #{keyword} || '%'
+	        OR dep_nm LIKE '%' || #{keyword} || '%'
+	        OR sub_se_code LIKE '%' || #{keyword} || '%'
+	    )
+	</select>
+	
+	
+	
+	<select id="getSub" parameterType="String" resultType="SubjectVO">
+		SELECT * FROM
+		subject 
+		WHERE sub_code = #{subCode}
+	</select>
+	
+	<!-- 학과 리스트 불러오는 쿼리 -->
+	<select id="depList" parameterType="String" resultType="DepartmentVO">
+		SELECT dep_code
+			 , dep_nm
+		FROM department
+		WHERE col_code = #{colCode}
+	</select>
+	
+	<!-- 단과대 불러오는 쿼리 -->
+	<select id="colList" parameterType="String" resultType="DepartmentVO">
+		SELECT code_id
+		     , code_nm
+		FROM code
+		WHERE group_id = #{groupId}
+	</select>
+	
+	<!-- 과목 구분 번호 조회 (공통코드) -->
+	<select id="subSeCode" parameterType="String" resultType="CodeVO">
+		SELECT code_id
+		     , code_nm
+		FROM code
+		WHERE group_id = #{groupId}
+	</select>
+	
+	<!-- 과목 insert -->
+	<insert id="insertSubject" parameterType="SubjectVO">
+		INSERT INTO subject (
+							 sub_code
+						   , dep_code
+						   , sub_nm
+						   , sub_yr
+						   , sub_se_code
+						   )
+		VALUES (
+				 #{subCode}
+			   , #{depCode}
+			   , #{subNm}
+			   , #{subYr}
+			   , #{subSeCode}
+			   )
+	</insert>
+	
+	<!-- 과목 상세보기 -->
+	<select id="detailSubject" parameterType="SubjectVO" resultType="SubjectVO">
+		SELECT s.sub_code
+			 , s.dep_code
+			 , s.sub_nm
+			 , s.sub_yr
+			 , s.sub_se_code
+			 , d.dep_nm
+		FROM subject s
+		INNER JOIN department d ON s.dep_code = d.dep_code
+		WHERE s.sub_code = #{subCode}
+	</select>
+	
+	<!-- 해당하는 강의 리스트 들고오기 -->
+	<select id="detailLec" parameterType="LecApplyVO" resultType="LecApplyVO">
+		SELECT la.leca_id,
+		       la.mem_no,
+		       s.sub_code,
+		       la.leca_yr,
+		       la.leca_sem,
+		       la.leca_nm,
+		       la.leca_se_code,
+		       la.leca_trg,
+		       la.leca_crd,
+		       la.leca_count,
+		       la.leca_cap,
+		       la.leca_dt,
+		       la.leca_std_code,
+		       m.mem_nm
+		FROM lec_apply la
+		INNER JOIN subject s ON la.sub_code = s.sub_code
+		LEFT JOIN member m ON la.mem_no = m.mem_no
+		WHERE s.sub_code = #{subCode}
+	</select>
+	
+	<!-- 과목 수정 -->
+	<update id="updateSubject" parameterType="SubjectVO">
+		UPDATE subject
+		SET
+			sub_nm = #{subNm},
+			sub_se_code = #{subSeCode}
+		WHERE 
+			sub_code = #{subCode}
+	</update>
+	
+	<!-- 과목 삭제 -->
+	<update id="deleteSubject" parameterType="SubjectVO">
+		UPDATE subject
+		SET sub_del_yn = 'Y'
+		WHERE sub_code = #{subCode}
+	</update>
+	
+	<select id="getSubjTotal" parameterType="hashMap" resultType="int">
+		SELECT count(*) FROM subject WHERE 1 = 1 and sub_del_yn='N'
+		<include refid="and"></include>
+	</select>
+	
+	
+</mapper>

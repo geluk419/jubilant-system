@@ -1,0 +1,234 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ddit.proj.mapper.NoticeMapper">
+<resultMap type="noticeVO" id="noticeMap">
+	<result property="memNm" column="MEM_NM" />
+	<result property="hit" column="HIT" />
+	<result property="ntcCode" column="NTC_CODE" />
+	<result property="memNo" column="MEM_NO" />
+	<result property="ntcTtl" column="NTC_TTL" />
+	<result property="ntcCon" column="NTC_CON" />
+	<result property="ntcSeCode" column="NTC_SE_CODE" />
+	<result property="ntcDt" column="NTC_DT" />
+	<result property="fileDelYn" column="FILE_DEL_YN" />
+	<result property="ntcUpdde" column="NTC_UPDDE" />
+	<result property="fileId" column="FILE_ID" />
+</resultMap>
+	
+	<!-- 공지구분 불러오기 -->
+	<select id="noticeSelect" parameterType="String" resultType="CodeVO">
+		select * from code where group_id = 'NOTI'
+	</select>
+	
+	<!-- 새 공지 insert -->
+	<insert id="insertNotice" parameterType="NoticeVO">
+		<selectKey resultType="String" order="BEFORE" keyProperty="fileId">		
+			SELECT 'notice' || (SELECT NVL(MAX(TO_NUMBER(SUBSTR(FILE_ID, 7))), 0) + 1 FROM NOTICE) FROM DUAL
+		</selectKey>
+		INSERT INTO NOTICE(NTC_CODE
+						 , MEM_NO
+						 , NTC_TTL
+						 , NTC_CON
+						 , NTC_SE_CODE
+						 , NTC_DT
+						 , FILE_DEL_YN
+						 , NTC_UPDDE
+						 <if test="noticeFiles!=null and noticeFiles!=''">
+						 , FILE_ID
+						 </if>
+						 , MEM_NM)
+		VALUES(seq_NTC_CODE.NEXTVAL
+		     , #{memNo}
+		     , #{ntcTtl}
+		     , TO_CLOB(#{ntcCon})
+		     , #{ntcSeCode}
+		     , SYSDATE		     
+		     , 'N'
+		     , #{ntcUpdde}
+		     <if test="noticeFiles!=null and noticeFiles!=''">
+		     , #{fileId}
+		     </if>
+		     , #{memNm})
+	</insert>
+	
+	<!-- 첨부파일 insert -->
+	<insert id="insertAttach" parameterType="AttachVO">
+    	INSERT INTO ATTACH(FILE_ID
+						 , FILE_NO
+						 , FILE_PATH
+						 , FILE_NM
+						 , FILE_ORI_NM
+						 , FILE_EXTSN
+						 , FILE_SIZE
+						 , FILE_DT
+						 , FILE_THUMB_IMG)
+		VALUES(#{fileId}
+			 , (SELECT NVL(MAX(FILE_NO),0)+1 FROM ATTACH)
+			 , #{filePath}
+			 , #{fileNm}
+			 , #{fileOriNm}
+			 , #{fileExtsn}
+			 , #{fileSize}
+			 , SYSDATE
+			 , 'NULL')
+	</insert>
+	
+	<!-- 공지사항 리스트 -->
+	<select id="listNotice" resultMap="noticeMap" parameterType="hashMap">
+	    WITH U AS (
+	        SELECT ROW_NUMBER() OVER (ORDER BY NTC_CODE ASC) AS RNUM
+	              , NTC_CODE
+	              , MEM_NO
+	              , NTC_TTL
+	              , NTC_CON
+	              , NTC_SE_CODE
+	              , NTC_DT
+	              , FILE_DEL_YN
+	              , NTC_UPDDE
+	              , FILE_ID
+	              , MEM_NM
+	              , HIT
+	        FROM NOTICE 
+	        WHERE FILE_DEL_YN = 'N'
+	        <include refid="where"></include>
+        	)
+	        SELECT 
+               NTC_CODE
+             , MEM_NO
+             , NTC_TTL
+             , NTC_CON
+             , NTC_SE_CODE
+             , NTC_DT
+             , FILE_DEL_YN
+             , NTC_UPDDE
+             , FILE_ID
+             , MEM_NM
+             , HIT
+	    FROM U
+	    WHERE RNUM BETWEEN ((#{currentPage} - 1) * #{size} + 1) AND (#{currentPage} * #{size}) 
+	    ORDER BY NTC_CODE ASC
+	</select>
+	
+	<!-- 상세보기 -->
+	<select id="getNotice" resultType="NoticeVO" parameterType="NoticeVO">			 
+		SELECT   NTC_CODE , MEM_NO,NTC_TTL, NTC_CON,NTC_SE_CODE,NTC_DT,FILE_DEL_YN,
+		TO_CHAR(NTC_UPDDE, 'YYYY-MM-DD') AS NTC_UPDDE,
+		FILE_ID, MEM_NM, 
+		(SELECT FILE_ORI_NM FROM ATTACH A WHERE N.FILE_ID = A.FILE_ID) AS FILE_ORI_NM,
+        (SELECT FILE_PATH FROM ATTACH WHERE FILE_ID = (SELECT FILE_ID FROM NOTICE WHERE NTC_CODE=#{ntcCode} )) AS FILE_PATH,
+        (SELECT CODE_NM FROM CODE WHERE GROUP_ID = 'NOTI' AND CODE_ID = NTC_SE_CODE) AS NTC_SE_NAME
+        FROM NOTICE N WHERE NTC_CODE = #{ntcCode}
+	</select>
+	
+	<!-- 공지사항 수정 --> 
+	<update id="updateNotice" parameterType="NoticeVO">
+		UPDATE NOTICE
+		SET
+		MEM_NO=#{memNo}, 
+		NTC_TTL=#{ntcTtl},
+		NTC_CON=TO_CLOB(#{ntcCon}),
+		NTC_SE_CODE=#{ntcSeCode},
+		NTC_UPDDE=SYSDATE,
+		FILE_ID=#{fileId},
+		MEM_NM=#{memNm}
+		WHERE
+		NTC_CODE=#{ntcCode}
+	</update>
+	
+	<update id="updateAttach" parameterType="AttachVO">
+		UPDATE attach
+		SET 
+		    FILE_NO = #{fileNo}, 
+		    FILE_PATH = #{filePath},
+		    FILE_NM = #{fileNm},
+		    FILE_ORI_NM = #{fileOriNm},
+		    FILE_EXTSN = #{fileExtsn},
+		    FILE_SIZE = #{fileSize},
+		    FILE_DT = SYSDATE,
+		    FILE_THUMB_IMG = #{fileThumbImg}
+		WHERE
+		    FILE_ID = #{fileId}
+	</update>
+	
+	<select id="genFileId" parameterType="NoticeVO" resultType="string">
+	   select nvl(file_id, (SELECT 'notice' || (NVL(MAX(TO_NUMBER(SUBSTR(FILE_ID, 7))), 0) + 1) FROM NOTICE)) from notice where NTC_CODE=#{ntcCode}
+	</select>
+	
+	<delete id="deleteAttach" parameterType="AttachVO" >
+		delete from attach where file_id = #{fileId}
+	</delete>
+	
+	<!-- 공지사항 삭제(1-1) -->
+	<update id="deleteNotice1" parameterType="string">
+		UPDATE ATTACH
+		SET    FILE_DEL_YN = 'Y'
+		WHERE  FILE_ID = #{fileId}
+	</update>
+
+	<!-- 공지사항 삭제(1-2) -->
+	<update id="deleteNotice12" parameterType="string">
+		UPDATE NOTICE
+		SET    FILE_DEL_YN = 'Y',
+		       FILE_ID = NULL
+		WHERE  FILE_ID = #{fileId}
+	</update>
+	
+	<!-- 공지사항 삭제(2) -->
+	<update id="deleteNotice2" parameterType="string">
+		UPDATE NOTICE
+		SET    FILE_DEL_YN = 'Y'
+		WHERE  NTC_CODE = #{ntcCode}
+	</update>
+	
+	<!-- 공지사항 조회수 -->
+	<update id="hitNotice" parameterType="string">
+		UPDATE NOTICE
+		SET HIT = HIT+1
+		WHERE NTC_CODE = #{ntcCode}
+	</update>
+	
+	<!-- 페이징 -->
+	<select id="getNoticeTotal" parameterType="hashMap" resultType="int">
+		SELECT COUNT(*) FROM NOTICE
+  		WHERE FILE_DEL_YN = 'N'
+  		<include refid="where"></include>
+	</select>
+	
+	<!-- 공지구분 검색 -->
+	<select id="search" resultType="NoticeVO" parameterType="Map">
+		SELECT * FROM NOTICE
+		WHERE FILE_DEL_YN = 'N'
+		<include refid="where"></include>
+	</select>
+	
+	<!-- 검색 -->
+	<sql id="where">
+		<if test="ntcSeCode!=null and ntcSeCode!=''">
+			AND NTC_SE_CODE = #{ntcSeCode}
+		</if>
+		<if test="keyword!=null and keyword!=''">
+			AND NTC_TTL LIKE '%' || #{keyword} || '%'
+		</if>
+	</sql>	
+
+	<select id="getMainNotice">
+		SELECT
+			  N.NTC_CODE
+			, N.NTC_TTL
+		    , TO_CHAR(N.NTC_DT, 'YYYY-MM-DD') AS NTC_DTT
+			, N.MEM_NM
+		FROM (
+			SELECT
+				  NTC_CODE
+				, NTC_TTL
+				, NTC_DT
+				, MEM_NM
+			FROM
+				NOTICE
+			ORDER BY
+				NTC_DT DESC
+		) N
+		WHERE
+			ROWNUM &lt;= 5
+	</select>
+</mapper>

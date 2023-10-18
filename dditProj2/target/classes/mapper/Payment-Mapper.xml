@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ddit.proj.mapper.PaymentMapper">
+
+	<!-- 학년,학기  불러오는 쿼리 -->
+<!-- 	<select id="grade" parameterType="String" resultType="StuMyPageVO"> -->
+<!-- 		SELECT s.stu_yr -->
+<!-- 		FROM member m -->
+<!-- 		INNER JOIN student S ON m.mem_no = s.mem_no -->
+<!-- 		WHERE m.mem_no = #{memNo} -->
+<!-- 	</select> -->
+
+
+	<!-- 학과 불러오는 쿼리 -->
+<!-- 	<select id="department" parameterType="String" resultType="StuMyPageVO"> -->
+<!-- 		SELECT d.dep_nm -->
+<!-- 		FROM student s -->
+<!-- 		INNER JOIN department d ON s.dep_code = d.dep_code -->
+<!-- 		WHERE s.mem_no = #{memNo} -->
+<!-- 	</select> -->
+
+
+
+
+</mapper>

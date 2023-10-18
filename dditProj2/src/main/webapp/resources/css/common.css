@@ -1,0 +1,82 @@
+
+:root {
+    --my-color: rgb(182, 26, 63);
+    --my2-color: rgb(134, 19, 49);
+    --blue-color: #1b68ff;
+    --white-color: #ffffff;
+}
+
+.bg-my {
+  background-color: rgb(182, 26, 63);
+}
+.bg-white {
+	background-color: #FFFFFF;
+}
+.text-my {
+  color: rgb(182, 26, 63);
+}
+.color-my {
+  color: rgb(182, 26, 63);
+}
+.text-black{
+	color: #000000;
+}
+.text {
+  font-family: Georgia, "맑은 고딕", serif;
+}
+
+.fs-12 { font-size: 12px; }
+.fs-14 { font-size: 14px; }
+.fs-16 { font-size: 16px; }
+.fs-18 { font-size: 18px; }
+.fs-20 { font-size: 20px; }
+.fs-22 { font-size: 22px; }
+.fs-24 { font-size: 24px; }
+.fs-26 { font-size: 26px; }
+.fs-28 { font-size: 28px; }
+.fs-30 { font-size: 30px; }
+.fs-32 { font-size: 32px; }
+.fs-34 { font-size: 34px; }
+.fs-36 { font-size: 36px; }
+.fs-40 { font-size: 40px; }
+.fs-48 { font-size: 48px; }
+.fs-52 { font-size: 52px; }
+.fs-60 { font-size: 60px; }
+.fs-64 { font-size: 64px; }
+.fs-72 { font-size: 72px; }
+.fs-90 { font-size: 90px; }
+.fs-96 { font-size: 96px; }
+
+.btn {
+    white-space:nowrap;
+    padding-bottom: 2px;
+}
+.btn-my {
+    background-color: rgb(182, 26, 63);
+    color: #ffffff;
+}
+.btn-my:hover {
+    background-color: rgb(134, 19, 49);
+    color: #FFFFFF;
+}
+
+/* 페이지 */
+.page-item.active .page-link {
+    background-color: var(--my-color);
+    border-color: rgb(182 26 63 / 50%);
+}
+.page-link {
+    background-color: #ffffff;
+}
+
+.custom-cursor {
+    position: absolute;
+    width: 50px; /* 동그라미의 너비 */
+    height: 50px; /* 동그라미의 높이 */
+    background-color: rgba(255, 0, 0, 0.705); /* 노란색 동그라미의 색상 및 투명도 설정 */
+    border-radius: 100%; /* 동그라미 모양 */
+    pointer-events: none; /* 커서 이벤트를 무시하도록 설정 */
+    transform: translate(-50%, -50%); /* 마우스 커서 중심에 동그라미 배치 */
+    transition: transform 0.1s ease; /* 부드러운 애니메이션 효과 추가 */
+    z-index: 1001; /* 제일 앞으로 오게 조정 */
+}

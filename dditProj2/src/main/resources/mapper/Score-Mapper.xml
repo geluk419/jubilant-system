@@ -1,0 +1,625 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ddit.proj.mapper.ScoreMapper">
+	<resultMap type="ScoreVO" id="scoreMap">
+		<result property="lecCode" column="LEC_CODE" />
+		<result property="memNo" column="MEM_NO" />
+		<result property="codeScreGrade" column="CODE_SCRE_GRADE" />
+		<result property="scoreTest" column="SCORE_TEST" />
+		<result property="scoreTask" column="SCORE_TASK" />
+		<result property="scoreAten" column="SCORE_ATEN" />
+		<result property="scoreScore" column="SCORE_SCORE" />
+		<result property="scoreAll" column="SCORE_ALL" />
+		
+  		<collection property="lecApplyVOList" resultMap="lecApplyMap" />  
+	</resultMap>
+	
+	  
+	<resultMap type="LecApplyVO" id="lecApplyMap">
+		<result property="lecaId" column="LECA_ID" />
+		<result property="lecaYr" column="LECA_YR" />
+		<result property="lecaSem" column="LECA_SEM" />
+		<result property="lecaNm" column="LECA_NM" />
+		<result property="lecaSeCode" column="LECA_SE_CODE" />
+		<result property="lecaCrd" column="LECA_CRD" />
+	</resultMap>
+	
+	<!-- 성적이의신청 > 승인 -->
+	<update id="approveObj" parameterType="ObjectionVO">
+		UPDATE objection
+		SET
+		    obj_yn = 'Y'
+		WHERE
+		        lec_code = #{lecCode}
+		    AND mem_no = #{memNo}
+	</update>
+
+	<!-- 성적이의신청 > 반려 -->
+	<update id="rejectObj" parameterType="ObjectionVO">
+		UPDATE objection
+		SET
+			obj_yn = 'N',
+		    obj_return = #{objReturn}
+		WHERE
+		        lec_code = #{lecCode}
+		    AND mem_no = #{memNo}
+	</update>
+	
+	<!-- 이의 신청 목록 > 상세 -->
+	<select id="ScoreObjByStu" parameterType="ObjectionVO" resultType="ObjectionVO">
+		SELECT
+		    m.mem_nm,
+		    o.obj_code,
+		    o.mem_no,
+		    o.lec_code,
+		    o.obj_ttl,
+		    o.obj_con,
+		    o.obj_dt,
+		    o.obj_yn,
+		    o.obj_return,
+		    c.col_nm,
+		    d.dep_nm,
+		    s.code_scre_grade,
+		    s.score_all
+		FROM
+		         member m
+		    INNER JOIN objection o ON m.mem_no = o.mem_no
+		    LEFT JOIN college c ON m.mem_col_code = c.col_code
+		    LEFT JOIN department d ON m.mem_dep_code = d.dep_code
+		    INNER JOIN score s ON m.mem_no = s.mem_no AND s.lec_code = #{lecCode}
+		WHERE
+		        o.lec_code = #{lecCode}
+		    AND o.mem_no = #{memNo}
+	</select>
+	
+	<!-- 성적 이의 신청 목록  -->
+	<select id="listScoreObj" parameterType="String" resultType="ObjectionVO">
+		SELECT
+		    m.mem_nm,
+		    o.obj_code,
+		    o.mem_no,
+		    o.lec_code,
+		    o.obj_ttl,
+		    o.obj_con,
+		    o.obj_dt,
+		    o.obj_yn,
+		    o.obj_return
+		FROM
+		    objection o,
+		    member    m
+		WHERE
+		        o.lec_code = #{lecCode}
+		    AND m.mem_no = o.mem_no 
+	</select>
+	
+	
+	<!-- 성적 수정 -->
+	<update id="gradeUpdate" parameterType="ScoreVO"> 
+	UPDATE score
+	SET
+	    code_scre_grade = #{codeScreGrade},
+	    score_test = #{scoreTest},
+	    score_task = #{scoreTask},
+	    score_aten = #{scoreAten},
+	    score_score = #{scoreScore},
+	    score_all = #{scoreAll}
+	WHERE
+	        mem_no = #{memNo}
+	    AND lec_code = #{lecCode}
+	</update>
+	
+	<!-- 성적 등록 -->
+	<insert id="gradeInsert" parameterType="ScoreVO">
+	INSERT INTO score (
+	    lec_code,
+	    mem_no,
+	    code_scre_grade,
+	    score_test,
+	    score_task,
+	    score_aten,
+	    score_score,
+	    score_all
+	) VALUES (
+	    #{lecCode},
+	    #{memNo},
+	    #{codeScreGrade},
+	    #{scoreTest},
+	    #{scoreTask},
+	    #{scoreAten},
+	    #{scoreScore},
+	    #{scoreAll}
+	)
+	</insert>
+	
+	<!-- 성적 유무확인 -->
+	<select id="gradeCheck" parameterType="ScoreVO" resultType="int">
+	SELECT
+	    COUNT(*)
+	FROM
+	    score
+	WHERE
+	    lec_code = #{lecCode}
+	    AND mem_no = #{memNo}
+	</select>
+	
+	<!-- 해당 교수 강의 목록 > 수강생 목록 -->
+	<select id="listStuByLec" parameterType="ScoreVO" resultType="ScoreVO">
+	/* com.ddit.proj.mapper.ScoreMapper.listStuByLec */
+	SELECT
+	    sl.lec_code,
+	    m.mem_nm,
+	    c.col_nm,
+	    d.dep_nm,
+	    s.stu_yr,
+	    sl.mem_no,
+	    task_aten_query.score_task,
+	    task_aten_query.score_aten,
+	    test_query.score_test,
+	    ( coalesce(task_aten_query.score_task, 0) + coalesce(task_aten_query.score_aten, 0) + coalesce(test_query.score_test, 0) ) AS score_score,
+	    sc.code_scre_grade
+	FROM
+	         stu_lec sl
+	    INNER JOIN member     m ON m.mem_no = sl.mem_no
+	    LEFT JOIN college    c ON m.mem_col_code = c.col_code
+	    LEFT JOIN department d ON m.mem_dep_code = d.dep_code
+	    LEFT JOIN student    s ON m.mem_no = s.mem_no
+	    LEFT JOIN score      sc ON m.mem_no = sc.mem_no
+	                          AND sc.lec_code = #{lecCode}
+	    LEFT JOIN (
+	        SELECT
+	            task_query.mem_no,
+	            task_query.score_task,
+	            aten_query.score_aten
+	        FROM
+	            (
+	                SELECT
+	                    ts.mem_no,
+	                    floor(SUM(nvl(ts.code_tsub_score, 0)) /(
+	                        SELECT
+	                            SUM(task_score) AS totaltask
+	                        FROM
+	                            task
+	                        WHERE
+	                            lec_code = #{lecCode}
+	                    ) * 40) AS score_task
+	                FROM
+	                    task        ta
+	                    LEFT JOIN task_submit ts ON ta.task_code = ts.task_code
+	                    LEFT JOIN member      m ON m.mem_no = ts.mem_no
+	                WHERE
+	                        ta.lec_code = #{lecCode}
+	                    AND ts.mem_no = m.mem_no
+	                    AND ta.task_code = ts.task_code
+	                GROUP BY
+	                    ts.mem_no
+	            ) task_query
+	            LEFT JOIN (
+	                SELECT
+	                    at.mem_no,
+	                    CASE
+	                        WHEN at.totalabsent >= 4 THEN
+	                            0
+	                        WHEN at.totalabsent = 3  THEN
+	                            2.5
+	                        WHEN at.totalabsent = 2  THEN
+	                            5
+	                        WHEN at.totalabsent = 1  THEN
+	                            7.5
+	                        ELSE
+	                            10
+	                    END AS score_aten
+	                FROM
+	                    (
+	                        SELECT
+	                            mem_no,
+	                            SUM(
+	                                CASE
+	                                    WHEN code_aten_se = '4' THEN
+	                                        1
+	                                    ELSE
+	                                        0
+	                                END
+	                            ) + floor(SUM(
+	                                CASE
+	                                    WHEN code_aten_se IN(2, 3) THEN
+	                                        1
+	                                    ELSE
+	                                        0
+	                                END
+	                            ) / 3) AS totalabsent
+	                        FROM
+	                            attenadence
+	                        WHERE
+	                            lec_code = #{lecCode}
+	                        GROUP BY
+	                            mem_no
+	                    ) at
+	            ) aten_query ON task_query.mem_no = aten_query.mem_no
+	    )          task_aten_query ON sl.mem_no = task_aten_query.mem_no
+	    LEFT JOIN (
+	        SELECT
+	            ans.mem_no,
+	            SUM(ans.ans_score) / 100 * 50 AS score_test
+	        FROM
+	            answer_submit ans
+	        WHERE
+	            ans.lec_code = #{lecCode}
+	        GROUP BY
+	            ans.mem_no
+	    )          test_query ON sl.mem_no = test_query.mem_no
+	WHERE
+	    sl.lec_code = #{lecCode}
+	ORDER BY
+    	m.mem_nm
+	</select>
+	
+	
+	<!-- 시험, 과제, 출결, 실점 조회 -->
+<!-- 	<select id="listStuByLec" parameterType="ScoreVO" resultType="ScoreVO"> -->
+<!-- 	WITH task_score AS ( -->
+<!-- 		    SELECT -->
+<!-- 		        SUM(nvl(ts.code_tsub_score, 0)) / 30 * 40 AS score_task -->
+<!-- 		    FROM -->
+<!-- 		        task        t -->
+<!-- 		        LEFT JOIN task_submit ts ON t.task_code = ts.task_code -->
+<!-- 		                                    AND ts.mem_no = '202308S001' -->
+<!-- 		    WHERE -->
+<!-- 		        t.lec_code = '001' -->
+<!-- 		), test_score AS ( -->
+<!-- 		    SELECT -->
+<!-- 		        SUM(SUM(nvl(ans.ans_score, 0))) / 100 * 50 AS score_test -->
+<!-- 		    FROM -->
+<!-- 		        test          t -->
+<!-- 		        LEFT JOIN answer_submit ans ON t.lec_code = ans.lec_code -->
+<!-- 		                                       AND ans.mem_no = '202308S001' -->
+<!-- 		    WHERE -->
+<!-- 		        t.lec_code = '001' -->
+<!-- 		    GROUP BY -->
+<!-- 		        t.test_code, -->
+<!-- 		        t.test_nm -->
+<!-- 		), aten_score AS ( -->
+<!-- 		    SELECT -->
+<!-- 		        CASE -->
+<!-- 		            WHEN totalabsent = 4 THEN -->
+<!-- 		                0 -->
+<!-- 		            WHEN totalabsent = 3 THEN -->
+<!-- 		                2.5 -->
+<!-- 		            WHEN totalabsent = 2 THEN -->
+<!-- 		                5 -->
+<!-- 		            WHEN totalabsent = 1 THEN -->
+<!-- 		                7.5 -->
+<!-- 		            ELSE -->
+<!-- 		                NULL -->
+<!-- 		        END AS aten_score -->
+<!-- 		    FROM -->
+<!-- 		        ( -->
+<!-- 		            SELECT -->
+<!-- 		                COUNT( -->
+<!-- 		                    CASE -->
+<!-- 		                        WHEN code_aten_se = '4' THEN -->
+<!-- 		                            1 -->
+<!-- 		                        ELSE -->
+<!-- 		                            NULL -->
+<!-- 		                    END -->
+<!-- 		                ) + floor(COUNT( -->
+<!-- 		                    CASE -->
+<!-- 		                        WHEN code_aten_se IN(2, 3) THEN -->
+<!-- 		                            1 -->
+<!-- 		                        ELSE -->
+<!-- 		                            NULL -->
+<!-- 		                    END -->
+<!-- 		                ) / 3) AS totalabsent -->
+<!-- 		            FROM -->
+<!-- 		                attenadence -->
+<!-- 		            WHERE -->
+<!-- 		                    mem_no = '202308S001' -->
+<!-- 		                AND lec_code = '001' -->
+<!-- 		        ) subquery -->
+<!-- 		) -->
+<!-- 		SELECT -->
+<!-- 		    ( -->
+<!-- 		        SELECT -->
+<!-- 		            score_task -->
+<!-- 		        FROM -->
+<!-- 		            task_score -->
+<!-- 		    ) AS score_task, -->
+<!-- 		    ( -->
+<!-- 		        SELECT -->
+<!-- 		            score_test -->
+<!-- 		        FROM -->
+<!-- 		            test_score -->
+<!-- 		    ) AS score_test, -->
+<!-- 		    ( -->
+<!-- 		        SELECT -->
+<!-- 		            aten_score -->
+<!-- 		        FROM -->
+<!-- 		            aten_score -->
+<!-- 		    ) AS aten_score, -->
+<!-- 		    ( -->
+<!-- 		        SELECT -->
+<!-- 		            score_task -->
+<!-- 		        FROM -->
+<!-- 		            task_score -->
+<!-- 		    ) + ( -->
+<!-- 		        SELECT -->
+<!-- 		            score_test -->
+<!-- 		        FROM -->
+<!-- 		            test_score -->
+<!-- 		    ) + ( -->
+<!-- 		        SELECT -->
+<!-- 		            aten_score -->
+<!-- 		        FROM -->
+<!-- 		            aten_score -->
+<!-- 		    ) AS score_score -->
+<!-- 		FROM -->
+<!-- 		    dual -->
+<!-- 	</select> -->
+	
+	
+	<!-- 해당 교수 강의 목록 > 수강생 목록 > 학생별 성적 상세 내역 -->
+	<select id="getTotalScoreDetail" parameterType="hashmap" resultType="ScoreVO">
+		WITH w AS (
+		    SELECT
+		        '과제'            AS div,
+		        t.task_nm       AS evel_nm,
+		        nvl(ts.code_tsub_score, 0)
+		        || '/'
+		        || t.task_score AS score
+		    FROM
+		        task        t
+		        LEFT JOIN task_submit ts ON t.task_code = ts.task_code
+		                                    AND ts.mem_no = #{memNo}
+		    WHERE
+		        t.lec_code = #{lecCode}
+		    	AND t.task_del_yn = 'N'
+		    UNION ALL
+		    SELECT
+		        '시험'      AS div,
+		        t.test_nm AS evel_nm,
+		        SUM(nvl(ans.ans_score, 0))
+		        || '/'
+		        || 100    AS score
+		    FROM
+		        test          t
+		        LEFT JOIN answer_submit ans ON t.lec_code = ans.lec_code
+		                                       AND ans.mem_no = #{memNo}
+		    WHERE
+		            t.lec_code = #{lecCode}
+		        AND t.test_start_yn = 'Y'
+		    GROUP BY
+		        t.test_code,
+		        t.test_nm
+		)
+		SELECT
+		    w.div,
+		    w.evel_nm,
+		    w.score
+		FROM
+		    w
+		ORDER BY
+		    (
+		        CASE div
+		            WHEN '시험' THEN
+		                1
+		            WHEN '과제' THEN
+		                2
+		            ELSE
+		                3
+		        END
+		    )
+	</select>
+	
+	<select id="getScoreAndMaxScore" parameterType="hashmap" resultType="ScoreVO">
+		SELECT
+		    nvl((
+		        SELECT
+		            SUM(ts.code_tsub_score)
+		        FROM
+		            task_submit ts, task t
+		        WHERE
+		                t.task_code = ts.task_code
+		            AND t.lec_code =  #{lecCode}
+		            AND ts.mem_no = #{memNo}
+		    ), 0) + nvl((
+		        SELECT
+		            SUM(ans.ans_score)
+		        FROM
+		            answer_submit ans
+		        WHERE
+		                ans.lec_code =  #{lecCode}
+		            AND ans.mem_no = #{memNo}
+		    ), 0) AS stu_cur_score,
+		    100 + (
+		        SELECT
+		            SUM(task_score)
+		        FROM
+		            task
+		        WHERE
+		            lec_code =  #{lecCode}
+		    )     lec_score
+		FROM
+		    dual
+	</select>
+	
+	<!-- 학생성적리스트(학생) 전체성적 -->
+	<select id="listStuScore" resultMap="scoreMap" parameterType="hashMap">
+		SELECT
+		    a.CODE_SCRE_GRADE,
+		    a.SCORE_ALL,
+		    a.MEM_NO,
+		    b.lec_code,
+		    c.LECA_ID, 
+		    c.LECA_SE_CODE, 
+		    c.LECA_NM,
+            c.LECA_YR,
+            c.LECA_SEM,
+            c.LECA_CRD
+		FROM
+		    score a
+		INNER JOIN
+		    lecture b ON a.lec_code = b.lec_code
+		INNER JOIN
+		    lec_apply c ON b.leca_id = c.leca_id
+        inner join
+            stu_lec d on a.mem_no = d.mem_no and a.lec_code = d.lec_code
+		WHERE
+		    a.mem_no = #{memNo}
+		ORDER BY c.LECA_SEM
+		  
+        <if test='searchYear != 0'>
+			AND LECA_YR = #{searchYear}
+        	<choose>
+        		<when test="searchSem != 0">
+		            AND LECA_SEM = #{searchSem}
+        		</when>
+        		<otherwise></otherwise>
+        	</choose>
+	    </if>
+	     
+	    
+	</select>
+	
+	<!-- 학생성적리스트(학생) 현재학기성적 -->
+	<select id="listStuScoreCurrent" resultMap="scoreMap" parameterType="hashMap">
+		SELECT
+		    a.CODE_SCRE_GRADE,
+		    a.SCORE_ALL,
+		    a.MEM_NO,
+		    b.lec_code,
+		    c.LECA_ID, 
+		    c.LECA_SE_CODE, 
+		    c.LECA_NM,
+            c.LECA_YR,
+            c.LECA_SEM,
+            c.LECA_CRD
+		FROM
+		    score a
+		INNER JOIN
+		    lecture b ON a.lec_code = b.lec_code
+		INNER JOIN
+		    lec_apply c ON b.leca_id = c.leca_id
+        inner join
+            stu_lec d on a.mem_no = d.mem_no and a.lec_code = d.lec_code
+		WHERE
+		    a.mem_no = #{memNo} and c.LECA_SEM = 2
+	</select>
+	
+	
+	<!-- 강의성적 -->
+	<select id="getScoreLec" parameterType="ScoreVO" resultType="ScoreVO">
+		SELECT
+		    a.lec_code,
+		    a.mem_no,
+		    a.code_scre_grade,
+		    a.score_test,
+		    a.score_task,
+		    a.score_aten,
+		    a.score_score,
+		    a.score_all,
+            b.obj_ttl,
+            b.obj_con
+		FROM
+		    score a
+            left outer join objection b on a.mem_no = b.mem_no and a.lec_code = b.lec_code
+		WHERE
+		        a.mem_no = #{memNo}
+		    AND a.lec_code = #{lecCode}
+	</select>
+	
+	<!-- 성적이의신청(학생)-->
+	<insert id="insertObjection" parameterType="ObjectionVO">
+		INSERT INTO OBJECTION (
+		    OBJ_CODE, 
+		    MEM_NO,
+		    LEC_CODE,
+		    OBJ_TTL,
+		    OBJ_CON,
+		    OBJ_DT,
+		    OBJ_YN,
+		    OBJ_RETURN
+            
+		) VALUES (
+            OBJECTION_SEQ.NEXTVAL,
+		    #{memNo},
+            #{lecCode},
+            #{objTtl},
+            #{objCon},
+            SYSDATE,
+            #{objYn},
+            #{objReturn}
+    	)
+	</insert>
+	
+	<!-- 성적이의신청(학생)-->
+	<select id="getObjection" parameterType="ObjectionVO" resultType="ObjectionVO">
+		SELECT
+		    obj_yn,
+		    obj_return
+		FROM
+		    objection
+		WHERE
+		    mem_no = #{memNo}
+	</select>
+	
+	<!-- 키워드 검색 조건 -->
+	<sql id="and">
+	    <if test="nm != null and nm != ''">
+	        AND ( m.mem_nm LIKE '%'
+                                   || #{keyword}
+                                   || '%'
+                  )
+	    </if>
+	    <if test="no != null and no != ''">
+	        AND (m.mem_no LIKE '%'
+                                   || #{keyword}
+                                   || '%' )
+	    </if>
+	</sql>
+	
+	<!-- 성적 이의 총 개수 -->
+	<select id="countObj" parameterType="hashMap" resultType="int">
+	SELECT
+	    COUNT(*)
+	FROM
+	    objection
+	WHERE
+	    lec_code = #{lecCode}
+	<include refid="and"></include>
+	</select>
+	
+	<!-- 성적 이의 신청 목록 (페이징) -->
+	<select id="listObj" resultType="ObjectionVO" parameterType="hashMap">
+	    SELECT
+		    *
+		FROM
+		    (
+		        SELECT
+		            m.mem_nm,
+		            o.obj_code,
+		            o.mem_no,
+		            o.lec_code,
+		            o.obj_ttl,
+		            o.obj_con,
+		            o.obj_dt,
+		            o.obj_yn,
+		            o.obj_return,
+		            ROW_NUMBER()
+		            OVER(
+		                ORDER BY
+		                    o.obj_code
+		            ) AS row_num
+		        FROM
+		                 objection o
+		            INNER JOIN member m ON o.mem_no = m.mem_no
+		        WHERE
+		                lec_code = #{lecCode}
+		            AND (m.mem_no = o.mem_no)
+		            <include refid="and"></include>
+		    )
+		WHERE
+		    row_num BETWEEN #{startRow} AND #{endRow}
+		ORDER BY
+            obj_dt DESC
+	</select>
+	
+</mapper>

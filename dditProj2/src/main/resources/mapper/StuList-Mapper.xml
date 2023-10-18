@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ddit.proj.mapper.StuListMapper">
+
+	<!-- 학생 리스트 조회 -->
+	<select id="listStu" resultType="StudentVO" parameterType="hashMap">
+	
+	
+	select T.mem_tel , T.mem_addr1 , T.mem_addr2 , T.mem_nm , T.mem_no 
+	from 
+   		(SELECT  row_number() over(ORDER BY s.mem_nm) rnum,
+   		         m.mem_tel , 
+   		         m.mem_addr1 , 
+   		         m.mem_addr2 , 
+   		         s.mem_nm , 
+   		         s.mem_no FROM student s INNER JOIN member m ON m.mem_no = s.mem_no
+   		         
+	    <include refid="where" />
+	    ORDER BY s.mem_nm 
+	    ) T
+    where T.rnum  between  ((#{currentPage}-1)*#{size} +1)  and  #{currentPage} *#{size}  
+	
+	</select>
+
+	<!-- 학생 상세보기 -->
+	<select id="detailStu" parameterType="StudentVO" resultType="StudentVO">
+	    SELECT s.mem_nm
+	         , s.mem_no
+	         , s.stu_yr
+	         , s.stu_sem
+	         , m.mem_nme
+	         , m.mem_bir
+	         , m.mem_ml
+	         , m.mem_tel
+	         , m.mem_tel2
+	         , m.mem_addr1
+	         , m.mem_addr2
+	         , m.mem_zip
+	         , m.mem_pic
+	         , m.mem_depo
+	    FROM student s
+	    INNER JOIN member m ON m.mem_no = s.mem_no
+	    WHERE s.mem_no = #{memNo}
+	    <include refid="where" />
+	</select>
+	
+	<sql id="where">
+	    <if test="keyword!=null and keyword!=''">
+	        AND (
+	            s.MEM_NO LIKE '%' || #{keyword} || '%'
+	            OR s.MEM_NM LIKE '%' || #{keyword} || '%'
+	            OR m.MEM_TEL LIKE '%' || #{keyword} || '%'
+	            OR m.MEM_ADDR1 LIKE '%' || #{keyword} || '%'
+	            OR m.MEM_ADDR2 LIKE '%' || #{keyword} || '%'
+	        )
+	    </if>
+	</sql>
+
+	<select id="getStuTotal" parameterType="hashMap" resultType="int">
+	    SELECT COUNT(*) FROM (
+	        SELECT 1
+	        FROM student s
+	        INNER JOIN member m ON m.mem_no = s.mem_no
+	        <include refid="where"></include>
+	    ) subquery
+	</select>
+
+</mapper>

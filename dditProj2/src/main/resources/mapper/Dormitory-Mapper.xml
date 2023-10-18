@@ -1,0 +1,126 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ddit.proj.mapper.DormitoryMapper">
+
+	<!-- select, insert 됨 -->
+	<select id="listDormi" resultType="DormitoryApplyVO">
+		select * from dor_application
+	</select>
+	
+	<select id="getDormiFormVO" parameterType="String" resultType="DormitoryApplyFormVO">
+		select  mem_nm,MEM_BIR,mem_no,dep_nm,mem_tel,mem_tel2,cod_nm     from  ( SELECT (SELECT A.COL_CODE FROM DEPARTMENT A WHERE A.DEP_CODE = B.DEP_CODE) COL_CODE
+        , (SELECT FN_GET_CODE_NM(A.COL_CODE) FROM DEPARTMENT A WHERE A.DEP_CODE = B.DEP_CODE) COD_NM
+         , (SELECT C.DEP_NM FROM DEPARTMENT C WHERE C.DEP_CODE = B.DEP_CODE) DEP_NM
+         , b.MEM_NO,b.STU_YR, b.STU_SEM, b.STU_ACT, b.CODE_STU_SE
+         , c.MEM_PASS, c.MEM_DEL_YN, c.MEM_NM, c.MEM_NME, c.MEM_TEL, c.MEM_TEL2, c.MEM_ZIP, c.MEM_ADDR1, c.MEM_ADDR2, c.MEM_PIC, c.MEM_DEPO, c.MEM_BANK_CODE, c.MEM_ML, c.MEM_BIR
+   		FROM STUDENT b INNER JOIN MEMBER c ON (b.MEM_NO=c.MEM_NO))   where mem_no = #{memNo}
+	</select>
+
+	<select id="dormitoryDetail" parameterType="String">
+		SELECT
+		    a.mem_no mem_no,
+		    a.mem_nm mem_nm,
+		    a.mem_tel mem_tel,
+		    a.mem_tel2 mem_tel2,
+		    c.dep_nm dep_nm,
+		    d.dora_gender dora_gender,
+		    d.dora_yr || '년 ' || d.dora_sem || '학기' life_period,
+		    e.dor_nm_code dor_nm_code,
+		    e.dor_no dor_no
+		FROM
+		    member a
+		    INNER JOIN student         b ON a.mem_no = b.mem_no
+		    INNER JOIN department      c ON b.dep_code = c.dep_code
+		    INNER JOIN dor_application d ON a.mem_no = d.stu_mem_no
+		    INNER JOIN dormitory       e ON d.dor_code = e.dor_code
+		WHERE
+		    a.mem_no = #{memNo}
+	</select>
+
+	<select id="getDormi" parameterType="DormitoryApplyVO" resultType="DormitoryApplyVO">
+		select * from
+		dor_application where stu_mem_no=#{stuMemNo}
+	</select>
+
+	<insert id="insertDormi" parameterType="DormitoryApplyVO">
+		INSERT INTO dor_application (
+		    STU_MEM_NO,
+		    DOR_CODE,
+		    DORA_YR,
+		    DORA_SEM,
+		    DORA_RSN,
+		    CODE_DORA_REG,
+		    DORA_RETURN,
+		    DORA_GRD,
+		    DORA_FRESH_YN,
+		    DORA_GENDER
+		) VALUES (
+		    #{stuMemNo},
+		    (SELECT DOR_CODE FROM DORMITORY WHERE DOR_NM_CODE = #{doraNameCode} AND DOR_NO = #{dorNo}),
+		    #{doraYr},
+		    #{doraSem},
+		    #{doraRsn},
+		    #{codeDoraReg},
+		    #{doraReturn},
+		    #{doraGrd},
+		    #{doraFreshYn},
+		    #{doraGender}
+		)
+	</insert>
+	
+	<insert id="insertDormiSleep" parameterType="DormitorySleepOverVO">
+		INSERT INTO SLEEP_OVER (
+		    SLEEP_CODE, 
+            STU_MEM_NO, 
+            SLEEP_START, 
+            SLEEP_END, 
+            SLEEP_RSN
+            
+		) VALUES (
+            (SELECT NVL(MAX(SLEEP_CODE), 0) + 1 FROM SLEEP_OVER),
+            #{stuMemNo},
+		    #{sleepStart},
+            #{sleepEnd},
+            #{sleepRsn}
+    	)
+	</insert>
+	
+	<!-- select, insert 됨 -->
+	
+	
+	
+	
+
+	<update id="updateDormi" parameterType="DormitoryApplyVO">
+		UPDATE dor_application
+		SET
+		dorCode=#{dorCode},
+		empMemNo=#{empMemNo},
+		doraYr=#{doraYr},
+		doraSem=#{doraSem},
+		doraRsn=#{doraRsn},
+		codeDoraReg=#{codeDoraReg},
+		doraYn=#{doraYn},
+		doraReturn=#{doraReturn},
+		doraGrd=#{doraGrd},
+		doraFreshYn=#{doraFreshYn}
+		WHERE
+		stu_mem_no=#{stuMemNo}
+	</update>
+
+	<delete id="deleteDormi" parameterType="DormitoryApplyVO">
+		delete from dor_application where
+		stu_mem_no=#{stuMemNo}
+	</delete>
+
+	<!-- 상/벌점 조회 -->
+	<select id="detailScore" parameterType="DormitoryApplyFormVO" resultType="DormitoryApplyFormVO">
+		SELECT dorm_penalties
+			 , dorm_rewards
+		FROM   dor_application
+		WHERE  stu_mem_no= #{memNo}
+	</select>
+
+
+
+</mapper>

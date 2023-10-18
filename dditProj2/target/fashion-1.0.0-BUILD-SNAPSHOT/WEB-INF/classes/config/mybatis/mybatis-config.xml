@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE configuration PUBLIC "-//mybatis.org//DTD Config 3.0//EN" "http://mybatis.org/dtd/mybatis-3-config.dtd" >
+<configuration>
+	<settings>
+		<setting name="mapUnderscoreToCamelCase" value="true"/>
+		<setting name="jdbcTypeForNull" value="VARCHAR"/>
+	</settings>
+	
+	<typeAliases>
+	    <!-- 본인 VO 패키지 설정 -->
+		<typeAlias type="com.ddit.proj.vo.MemberVO" alias="memberVO"/>
+		<typeAlias type="com.ddit.proj.vo.AuthVO" alias="authVO"/>
+		<package name="com.ddit.proj.vo" />
+	</typeAliases>
+	
+<!-- 	<mappers> -->
+<!-- 		<mapper resource="mapper/Member-Mapper.xml"/> -->
+<!-- 	</mappers> -->
+	
+</configuration>

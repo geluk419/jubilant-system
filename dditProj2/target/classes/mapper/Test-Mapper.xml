@@ -1,0 +1,354 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ddit.proj.mapper.TestMapper">
+	
+	
+	<resultMap type="com.ddit.proj.vo.TestVO" id="testMap">
+		<result property="testLimit" column="TEST_LIMIT" />
+		<result property="testStartYn" column="TEST_START_YN" />
+		<result property="testEt" column="TEST_ET" />
+		<result property="testSt" column="TEST_ST" />
+		<result property="testDe" column="TEST_DE" />
+		<result property="testNm" column="TEST_NM" />
+		<result property="lecCode" column="LEC_CODE" />
+		<result property="testCode" column="TEST_CODE" />
+		<collection property="testExamList" resultMap="testExamMap"></collection>
+	</resultMap>
+	
+	<resultMap type="com.ddit.proj.vo.TestExamVO" id="testExamMap">
+		<result property="steNo" column="STE_NO" />
+		<result property="testCode" column="TEST_CODE" />
+		<result property="steType" column="STE_TYPE" />
+		<result property="steQue" column="STE_QUE" />
+		<result property="steRightAnswer" column="STE_RIGHT_ANSWER" />
+		<collection property="testChoiceList" resultMap="testChoiceMap"></collection>
+	</resultMap>
+	
+	<resultMap type="com.ddit.proj.vo.TestChoiceVO" id="testChoiceMap">
+		<result property="testCode" column="TEST_CODE" />
+		<result property="steNo" column="STE_NO" />
+		<result property="steSelect" column="STE_SELECT" />
+		<result property="steSelectNo" column="STE_SELECT_NO" />
+	</resultMap>
+	
+	
+	<select id="getTest" parameterType="TestVO" resultMap="testMap">
+		SELECT  A.TEST_CODE, 
+            A.LEC_CODE, 
+            A.TEST_NM, 
+            A.TEST_DE, 
+            A.TEST_ST, 
+            A.TEST_ET, 
+            A.TEST_START_YN, 
+            A.TEST_LIMIT,
+            b.ste_no,
+		    b.ste_type,
+		    b.ste_que,
+		    b.ste_right_answer,
+		    c.ste_select,
+		    c.ste_select_no
+		FROM test a INNER JOIN testexam b ON(A.TEST_CODE = B.TEST_CODE)
+                            LEFT JOIN testchoice c ON(b.test_code = c.test_code AND B.STE_NO = C.STE_NO)
+		WHERE b.test_code = #{testcode}
+	</select>
+	
+	<select id="getTestExam" parameterType="int" resultMap="testMap">
+		SELECT  A.TEST_CODE, 
+            A.LEC_CODE, 
+            A.TEST_NM, 
+            A.TEST_DE, 
+            A.TEST_ST, 
+            A.TEST_ET, 
+            A.TEST_START_YN, 
+            A.TEST_LIMIT,
+            b.ste_no,
+		    b.ste_type,
+		    b.ste_que,
+		    b.ste_right_answer,
+		    c.ste_select,
+		    c.ste_select_no
+		FROM test a INNER JOIN testexam b ON(A.TEST_CODE = B.TEST_CODE)
+                            LEFT JOIN testchoice c ON(b.test_code = c.test_code AND B.STE_NO = C.STE_NO)
+		WHERE b.test_code = #{testcode}
+	</select>
+	
+	<select id="getChoice" parameterType="int" resultMap="testMap">
+		SELECT
+		    a.ste_no,
+		    a.test_code,
+		    a.ste_type,
+		    a.ste_que,
+		    a.ste_right_answer,
+		    b.ste_no,
+		    b.ste_select,
+		    b.ste_select_no
+		FROM
+		    testexam   a
+		    LEFT JOIN testchoice b ON a.test_code = b.test_code
+		WHERE a.test_code = #{testcode}
+	</select>
+	
+
+	
+	
+	
+	<!--  -->
+	<select id="listTest" resultType="TestVO">
+		SELECT
+		    test_code,
+		    lec_code,
+		    test_nm,
+		    test_de,
+		    test_st,
+		    test_et,
+		    test_start_yn,
+		    test_limit
+		FROM
+		    test
+	</select>
+	
+	
+	<!-- 시험등록한거 select -->
+	<select id="getTestVO" parameterType="TestVO" resultType="TestVO">
+		SELECT DISTINCT
+		    a.test_code,
+		    a.lec_code,
+		    a.test_nm,
+		    a.test_de,
+		    a.test_st,
+		    a.test_et,
+		    a.test_start_yn,
+		    a.test_limit,
+		    (SELECT c.ans_yn FROM answer_submit c WHERE c.mem_no = #{memNo} AND b.ste_no = c.ste_no) ans_yn
+		FROM
+		    test a
+		    INNER JOIN testexam      b ON a.test_code = b.test_code
+		WHERE
+		    test_start_yn = 'Y' and lec_code = #{lecCode}
+    	</select>
+
+
+
+	<!-- insert -->
+	<insert id="insertTest" parameterType="TestVO">
+		insert into test(TEST_CODE, LEC_CODE, TEST_NM, TEST_DE, TEST_ST, TEST_ET,  TEST_LIMIT)
+		values(seq_test.nextval,#{lecCode},#{testNm}, #{testDe}
+								,#{testSt}, #{testEt},#{testLimit})
+		<selectKey resultType="int" keyProperty="testCode" order="AFTER">
+			select seq_test.currval from dual
+		</selectKey>
+	</insert>
+	<insert id="insertTestExam" parameterType="TestExamVO">
+		INSERT INTO testexam (STE_NO, TEST_CODE, STE_TYPE, STE_QUE, STE_RIGHT_ANSWER)
+    	VALUES (test_exam_seq.nextval, #{testCode}, #{steType}, #{steQue}, #{steRightAnswer})
+    	<selectKey resultType="int" keyProperty="steNo" order="AFTER">
+			select test_exam_seq.currval from dual
+		</selectKey>
+	</insert>
+	<insert id="insertTestChoice" parameterType="TestChoiceVO">
+		INSERT INTO testchoice (TEST_CODE, STE_NO, STE_SELECT, STE_SELECT_NO)
+    	VALUES (#{testCode}, #{steNo}, #{steSelect}, #{steSelectNo})
+	</insert>
+	
+
+
+        <!--  			
+		UPDATE test
+		SET
+			test_nm=#{testNm},
+			test_de=#{testDe},
+			test_st=#{testSt},
+			test_limit=#{testLimit},
+			ste_que=#{steQue},
+			ste_right_answer=#{steRightAnswer},
+			ste_no=#{steNo},
+			ste_select=#{steSelect},
+			ste_select_no=#{steSelectNo}
+			
+		WHERE
+			test_code=#{testCode}
+		-->
+	
+
+	<update id="updateTest"  parameterType="TestVO">
+		UPDATE test
+			SET
+				test_nm=#{testNm},
+				test_de=#{testDe},
+				test_st=#{testSt},
+				test_limit=#{testLimit}
+			WHERE
+				test_code=#{testCode}
+	</update>
+
+
+	<update id="updateTestExam"  parameterType="TestExamVO">		
+		update testexam
+	 		SET
+				ste_que=#{steQue},
+				ste_right_answer=#{steRightAnswer}
+			WHERE
+				test_code=#{testCode} and ste_no=#{steNo}
+	</update>
+
+	<update id="updateTestChoice"  parameterType="TestChoiceVO">		
+		update testchoice
+	 		SET
+				ste_select=#{steSelect}
+			WHERE
+				test_code=#{testCode} and ste_no=#{steNo} and ste_select_no=#{steSelectNo}
+	</update>
+
+
+	
+	<!-- delete -->
+	<update id="deleteTest" parameterType="TestVO">
+		UPDATE test
+		SET
+			test_start_yn = 'N'
+		WHERE
+			test_Code=#{testCode}
+	</update>
+
+
+
+	<!-- 시험응시 -->
+	<select id="testStuStart" parameterType="TestVO" resultType="TestStuVO"> 
+		SELECT
+		    e.leca_nm,
+    		d.lec_code,
+		    c.test_nm,
+		    a.ste_no,
+		    b.ste_que,
+		    a.ste_select,
+		    a.ste_select_no
+		FROM
+		    testchoice a
+		    INNER JOIN testexam   b ON a.ste_no = b.ste_no
+		    INNER JOIN test       c ON a.test_code = c.test_code
+		    INNER JOIN lecture    d ON c.lec_code = d.lec_code
+		    INNER JOIN lec_apply  e ON d.leca_id = e.leca_id
+		WHERE
+		        a.test_code = #{testCode}
+		    AND c.test_start_yn = 'Y' and d.lec_code = #{lecCode}
+		ORDER BY
+		    a.ste_no,
+		    a.ste_select_no
+	</select>
+
+	 
+	<!-- 시험응시insert -->
+	
+	<insert id="insertAnswerSubmit">
+		<foreach collection="list" item="item" open="INSERT ALL" close="SELECT * FROM DUAL" separator=" ">
+			INTO
+				ANSWER_SUBMIT
+				(	
+					LEC_CODE,
+					STE_NO, 
+					MEM_NO, 
+					ANS_ANSWER,
+					MEM_NM
+				)
+			VALUES
+				(
+    				#{item.lecCode}, 
+	    			#{item.steNo}, 
+	    			#{item.memNo}, 
+	    			#{item.ansAnswer},
+	    			(SELECT mem_nm 
+	    			FROM member 
+	    			WHERE #{item.memNo} = mem_no)
+   				)
+		</foreach>
+	</insert>
+
+	
+	
+	<!-- 시험등록학생명단select -->
+	<select id="getSubmitVO" resultType="TestSubmitVO" parameterType="String">
+		SELECT DISTINCT
+		    a.mem_no,
+		    a.mem_nm,
+		    a.ans_submit_time
+		FROM
+		    answer_submit a inner join test t on a.lec_code = t.lec_code
+		WHERE
+			a.ans_yn = 'Y' and t.test_code = #{testCode}
+		order by a.ans_submit_time DESC
+    </select>
+	
+	<!-- 시험결과등록의 상세보기 
+	getTestNotice->map : {testCode=322, memNo=202308S001}
+	-->
+	<select id="testStuDetail" parameterType="hashMap" resultType="hashMap">
+		SELECT A.LEC_CODE lecCode, A.STE_NO steNo, A.MEM_NO memNo, A.ANS_ANSWER ansAnswer, A.ANS_SCORE ansScore
+			 , A.ANS_YN ansYn, A.ANS_SUBMIT_TIME ansSubmitTime, A.MEM_NM memNm
+	         , B.TEST_CODE testCode, B.STE_TYPE steType, B.STE_QUE steQue, B.STE_RIGHT_ANSWER steRightAnswer
+	         , (SELECT C.ANS_ANSWER FROM ANSWER_SUBMIT C WHERE C.LEC_CODE = A.LEC_CODE AND C.MEM_NO = A.MEM_NO AND C.STE_NO = A.STE_NO) steAnsAnswer
+		FROM  ANSWER_SUBMIT A  INNER JOIN TESTEXAM B ON A.STE_NO = B.STE_NO
+		WHERE B.TEST_CODE = #{testCode}
+		AND     A.MEM_NO = #{memNo}
+	</select>
+	
+	<!-- 학생이 결과 보기 누를 때 나오는 쿼리 -->
+	<select id="testResult">
+		SELECT
+			a.test_code,
+		    a.ste_no,
+		    a.ste_que,
+		    replace(a.ste_right_answer, 'option', '') ste_right_answer,
+		    b.mem_no,
+		    c.ste_select_no,
+		    c.ste_select,
+		    b.ans_answer,
+		    b.ans_score
+		FROM
+		         testexam a
+		    INNER JOIN answer_submit b ON a.ste_no = b.ste_no
+		    INNER JOIN testchoice    c ON a.ste_no = c.ste_no
+		WHERE
+		        a.test_code = #{testCode}
+		    AND mem_no = #{memNo}
+		ORDER BY
+		    a.ste_no
+		    , c.ste_select_no
+	</select>
+	
+	<!--
+	교수가 채점을 함
+	 map : {testCode=322, memNo=202308S001, _csrf=550e3900-6919-45b3-85d5-75cd7a24ec25} -->
+	<update id="ansScoreUpdatePost" parameterType="hashMap">
+		UPDATE ANSWER_SUBMIT X
+		SET       X.ANS_SCORE = (
+		                SELECT Y.RSLT
+		                FROM
+		                (
+		                    SELECT G.LEC_CODE, G.STE_NO, G.MEM_NO, G.ANS_ANSWER, G.ANS_SCORE, G.ANS_YN, G.ANS_SUBMIT_TIME, G.MEM_NM
+		                             , G.TEST_CODE, G.STE_TYPE, G.STE_QUE
+		                             , G.STE_RIGHT_ANSWER
+		                             , G.STE_ANS_ANSWER
+		                             , CASE WHEN SUBSTR(G.STE_RIGHT_ANSWER,-1) = G.STE_ANS_ANSWER THEN H.ONEJUMSU
+		                                       ELSE 0
+		                                END RSLT
+		                    FROM
+		                    (
+		                        SELECT A.LEC_CODE, A.STE_NO, A.MEM_NO, A.ANS_ANSWER, A.ANS_SCORE, A.ANS_YN, A.ANS_SUBMIT_TIME, A.MEM_NM
+		                                 , B.TEST_CODE, B.STE_TYPE, B.STE_QUE
+		                                 , B.STE_RIGHT_ANSWER
+		                                 , (SELECT C.ANS_ANSWER FROM ANSWER_SUBMIT C WHERE C.LEC_CODE = A.LEC_CODE AND C.MEM_NO = A.MEM_NO AND C.STE_NO = A.STE_NO) STE_ANS_ANSWER
+		                        FROM  ANSWER_SUBMIT A  INNER JOIN TESTEXAM B ON A.STE_NO = B.STE_NO
+		                        WHERE B.TEST_CODE = #{testCode}
+		                        AND     A.MEM_NO = #{memNo}
+		                    ) G,
+		                    (
+		                        SELECT  100 / COUNT(*) ONEJUMSU
+		                         FROM  ANSWER_SUBMIT A  INNER JOIN TESTEXAM B ON A.STE_NO = B.STE_NO
+		                        WHERE B.TEST_CODE = #{testCode}
+		                        AND     A.MEM_NO = #{memNo}
+		                    ) H
+		                ) Y
+		                WHERE X.LEC_CODE = Y.LEC_CODE AND X.STE_NO = Y.STE_NO AND X.MEM_NO = Y.MEM_NO
+		        )
+	</update>
+</mapper>

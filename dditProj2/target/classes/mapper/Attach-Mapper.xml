@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ddit.proj.mapper.AttachMapper">
+	
+	<!-- ATTACH 테이블에서 fileId를 받으면 List<fileVO>를 리턴 -->	
+	<select id="getAttachVOList" parameterType="AttachVO" resultType="AttachVO">
+		SELECT FILE_ID, FILE_NO, FILE_PATH, FILE_NM, FILE_ORI_NM, FILE_EXTSN, FILE_SIZE, FILE_DT, FILE_DEL_YN, FILE_THUMB_IMG 
+		FROM ATTACH
+		WHERE FILE_ID = #{fileId} AND FILE_DEL_YN = 'N'
+	</select>
+	
+	<!-- 첨부파일 수정 -->
+   	<update id="updateAttach" parameterType="AttachVO">
+	   	UPDATE ATTACH
+	        SET FILE_DEL_YN = 'Y'
+		WHERE FILE_ID =#{fileId}
+	</update>
+	
+</mapper>

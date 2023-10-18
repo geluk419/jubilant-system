@@ -1,0 +1,128 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ddit.proj.mapper.ScholarshipMapper">
+
+<!-- 장학금 대상자 조회 -->
+<select id="getScholarshipRec" parameterType="ScholarshipVO" resultType="ScholarshipVO">
+	SELECT
+	    S.COL_CODE,
+	    S.MEM_NO,
+	    S.DEP_CODE,
+	    S.STU_YR,
+	    S.MEM_NM,
+	    S.SCL_LPAY,
+	    D.DEP_NM,
+	    (SELECT CODE_NM FROM CODE WHERE GROUP_ID = 'COLL' AND CODE_ID = S.COL_CODE) AS CODE_NM
+	FROM DEPARTMENT D
+	INNER JOIN SCHOLARSHIP S ON S.DEP_CODE = D.DEP_CODE
+	WHERE S.SCL_STAT = 'N'
+	<if test="sclName != null and sclName != ''">
+        AND S.SCL_NAME = #{sclName}
+    </if>
+    <if test="colCode != null and colCode != ''">
+        AND S.COL_CODE = #{colCode}
+    </if>
+    <if test="depCode != null and depCode != ''">
+        AND S.DEP_CODE = #{depCode}
+    </if>
+</select>
+
+<!-- 본인이 듣는 강의 전부 조회 -->
+<select id="myLec" resultType="ScholarStuVO" parameterType="ScholarStuVO">
+	SELECT DISTINCT
+		S.MEM_NO,
+	    A.LECA_NM,
+	    A.LECA_SE_CODE,
+	    A.LECA_CRD,
+	    C.CODE_SCRE_GRADE, 
+	    C.SCORE_ALL
+    FROM   STU_LEC S, LECTURE L, SCORE C, LEC_APPLY A, SCHOLARSHIP P
+	WHERE  S.LEC_CODE = L.LEC_CODE
+	AND    S.MEM_NO = C.MEM_NO
+	AND    S.LEC_CODE = C.LEC_CODE
+	AND    L.LECA_ID = A.LECA_ID
+	AND    S.SL_SEM = A.LECA_SEM
+	AND    S.MEM_NO = #{memNo}
+	AND    L.LEC_DEL_YN = 'N'
+	AND    S.SL_SEM_YN = 'Y'
+	AND    P.SCL_YR = S.SL_YR
+	AND    P.SCL_SEM_CODE = S.SL_SEM
+	AND    P.MEM_NO = S.MEM_NO
+</select>
+
+<!-- 장학생 등록 -->
+<insert id="insertScholarship" parameterType="ScholarshipVO">
+	INSERT INTO SCHOLARSHIP(SCL_CODE, EMP_MEM_NO, SCL_YR, SCL_SEM_CODE, SCL_STAT, SCL_LPAY, SCL_NAME, MEM_NO, COL_CODE, DEP_CODE, STU_YR, MEM_NM)
+	VALUES(SEQ_SCHOLARSHIP.NEXTVAL, #{empMemNo}, #{sclYr}, #{sclSemCode}, 'N', #{sclLpay}, #{sclName}, #{memNo}, #{colCode}, #{depCode}, #{stuYr}, #{memNm})
+</insert>
+
+<!-- 장학금 지급 -->
+<update id="updateScholarship" parameterType="String"> 
+	UPDATE SCHOLARSHIP
+	SET SCL_STAT = 'Y'
+	WHERE MEM_NO = #{memNo}
+</update>
+
+<!-- 장학금 지급한 학생들 조회 -->
+<select id="selectSch" parameterType="ScholarshipVO" resultType="ScholarshipVO">
+	SELECT 
+	    SCL_YR
+	  , SCL_SEM_CODE
+	  , SCL_NAME
+	  , MEM_NO
+	  , MEM_NM
+	  , SCL_LPAY
+	FROM SCHOLARSHIP
+	WHERE SCL_STAT = 'Y'
+	<if test="sclName != null and sclName != ''">
+        AND SCL_NAME = #{sclName}
+    </if>
+    <if test="sclYr != null and sclYr != ''">
+        AND SCL_YR = #{sclYr}
+    </if>
+    <if test="sclSemCode != null and sclSemCode != ''">
+        AND SCL_SEM_CODE = #{sclSemCode}
+    </if>
+</select>
+
+<!-- 학생이 장학금 조회 -->
+<select id="getScholarship" parameterType="ScholarshipVO" resultType="ScholarshipVO">
+	SELECT
+	    scl_yr,
+	    scl_sem_code,
+	    scl_lpay,
+	    scl_name
+	FROM
+	    scholarship
+	WHERE
+	    mem_no = #{memNo}
+</select>
+
+<!-- 장학금종류 불러오는 쿼리 -->
+<select id="selectSclName" resultType="ScholarshipVO">
+	SELECT
+	    SCL_CODE
+	   ,SCL_NAME
+	FROM SCHOLARSHIP
+	WHERE SCL_STAT = 'N'
+</select>
+
+<!-- 장학금 연도 조회 -->
+<select id="selectSclYr" resultType="ScholarshipVO">
+	SELECT
+	    SCL_CODE
+	  , SCL_YR
+	FROM SCHOLARSHIP
+	WHERE SCL_STAT = 'Y'
+</select>
+
+<!-- 장학금 학기 조회 -->
+<select id="selectSemCode" resultType="ScholarshipVO">
+	SELECT
+	    SCL_CODE
+	  , SCL_SEM_CODE
+	FROM SCHOLARSHIP
+	WHERE SCL_STAT = 'Y'
+</select>
+
+</mapper>                                     

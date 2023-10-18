@@ -1,0 +1,190 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ddit.proj.mapper.CounselMapper">
+	<!-- 해당 교수 상담 목록 -->
+	<select id="listCounselByPro" parameterType="CounselVO" resultType="CounselVO">
+		SELECT
+		    c.cnsl_code
+			 	, c.stu_mem_no
+		    , c.pro_mem_no
+		    , c.cnsl_ttl
+		    , c.cnsl_con
+		    , c.cnsl_de
+		    , c.cnsl_dt
+		    , c.cnsl_rpl
+		    , c.cnsl_yn
+		    , c.cnsl_return
+		    , m.mem_nm
+		FROM
+			counsel c, member m
+		WHERE
+			m.mem_no = c.stu_mem_no
+		  AND pro_mem_no = #{proMemNo}
+		  AND c.cnsl_del_yn = 'N'
+	</select>
+	
+	<!-- 상담 승인 -->
+	<update id="approveCnsl" parameterType="CounselVO">
+	UPDATE counsel 
+	SET 
+		cnsl_rpl = #{cnslRpl}
+		,cnsl_yn = 'Y'
+	WHERE
+	  cnsl_code = #{cnslCode}
+	</update>
+
+	<!-- 상담 반려 -->
+	<update id="rejectCnsl" parameterType="CounselVO">
+	UPDATE counsel 
+	SET 
+		cnsl_return = #{cnslReturn}
+	WHERE
+	  cnsl_code = #{cnslCode}
+	</update>
+
+	<!-- 해당 학생 상담 목록	-->
+	<select id="listCounselByStu" parameterType="String" resultType="CounselVO">
+		SELECT
+			a.cnsl_code
+				 , a.stu_mem_no
+				 , a.pro_mem_no
+				 , a.cnsl_ttl
+				 , a.cnsl_con
+				 , TO_CHAR(a.cnsl_de, 'YYYY-MM-DD') AS cnsl_de
+				 , TO_CHAR(a.cnsl_dt, 'YYYY-MM-DD') AS cnsl_dt
+				 , a.cnsl_rpl
+				 , a.cnsl_yn
+				 , a.cnsl_return
+				 , b.mem_nm
+		FROM
+			counsel a, member b
+		WHERE
+			b.mem_no = a.stu_mem_no
+			AND a.stu_mem_no = #{memNo}
+			AND a.cnsl_del_yn = 'N'
+		ORDER BY a.cnsl_code DESC
+	</select>
+
+
+
+	<!-- 해당 상담 상세 보기 -->
+	<select id="getOneStuCounsel" parameterType="String" resultType="CounselVO">
+		SELECT
+			a.cnsl_code
+				 , a.stu_mem_no
+				 , a.pro_mem_no
+				 , a.cnsl_ttl
+				 , a.cnsl_con
+				 , TO_CHAR(a.cnsl_de, 'YYYY-MM-DD') as cnsl_de
+				 , a.cnsl_rpl
+				 , a.cnsl_return
+				 , b.mem_nm
+		FROM
+			counsel a, member b
+		WHERE
+			b.mem_no = a.pro_mem_no
+			AND a.cnsl_del_yn = 'N'
+			AND a.cnsl_code = #{cnslCode}
+	</select>
+
+	<!-- 학생이 상담 신청 -->
+	<insert id="insertStuCounsel" parameterType="CounselVO">
+		INSERT INTO counsel (
+				cnsl_code
+			, stu_mem_no
+			, pro_mem_no
+			, cnsl_ttl
+			, cnsl_con
+			, cnsl_de
+			, cnsl_dt
+		)
+		VALUES (
+			'C' || TO_CHAR(SYSDATE, 'YYYYMMDD') || (
+				 SELECT TO_CHAR(MAX(NVL(TO_NUMBER(SUBSTR(a.cnsl_code, 10)), 0)) + 1)
+				 FROM counsel a
+				 WHERE a.cnsl_code LIKE 'C' || TO_CHAR(SYSDATE, 'YYYYMMDD') || '%'
+		  )
+			, #{stuMemNo}
+			, #{proMemNo}
+			, #{cnslTtl}
+			, #{cnslCon}
+			, TO_DATE(#{cnslDe}, 'YYYY-MM-DD')
+			, SYSDATE
+		)
+	</insert>
+
+	<!-- 상담 취소 처리 -->
+	<update id="deleteStuCounsel" parameterType="String">
+		UPDATE counsel
+		SET
+			cnsl_del_yn = 'Y'
+		WHERE
+			cnsl_code = #{cnslCode}
+	</update>
+	
+	<!-- 키워드 검색 조건 -->
+	<sql id="and">
+	    <if test="nm != null and nm != ''">
+	        AND ( m.mem_nm LIKE '%'
+                                   || #{keyword}
+                                   || '%'
+                  )
+	    </if>
+	    <if test="no != null and no != ''">
+	        AND (c.stu_mem_no LIKE '%'
+                                   || #{keyword}
+                                   || '%' )
+	    </if>
+	</sql>
+	
+	<!-- 상담 총 개수 -->
+	<select id="countCounsel" parameterType="hashMap" resultType="int">
+	SELECT
+	    COUNT(*)
+	FROM
+	    counsel c
+	WHERE
+	        pro_mem_no = #{proMemNo}
+	    AND (c.cnsl_del_yn = 'N')
+	<include refid="and"></include>
+	</select>
+	
+	<!-- 해당 교수 상담 목록 (페이징) -->
+	<select id="listCounsel" resultType="CounselVO" parameterType="hashMap">
+	    SELECT
+		    *
+		FROM
+		    (
+		        SELECT
+		            c.cnsl_code,
+		            c.stu_mem_no,
+		            c.pro_mem_no,
+		            c.cnsl_ttl,
+		            c.cnsl_con,
+		            c.cnsl_de,
+		            c.cnsl_dt,
+		            c.cnsl_rpl,
+		            c.cnsl_yn,
+		            c.cnsl_return,
+		            m.mem_nm,
+		            ROW_NUMBER()
+		            OVER(
+		                ORDER BY
+		                    c.cnsl_code
+		            ) AS row_num
+		        FROM
+		            counsel c,
+		            member  m
+		        WHERE
+		                m.mem_no = c.stu_mem_no
+		            AND pro_mem_no = #{proMemNo}
+		            AND c.cnsl_del_yn = 'N'
+		            <include refid="and"></include>
+		    )
+		WHERE
+		    row_num BETWEEN #{startRow} AND #{endRow}
+		ORDER BY
+            cnsl_de DESC
+	</select>
+	
+</mapper>

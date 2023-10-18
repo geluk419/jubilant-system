@@ -1,0 +1,439 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ddit.proj.mapper.AttenadenceMapper">
+	<resultMap type="AttenadenceVO" id="attendanceMap">
+		<result property="atenDe" column="ATEN_DE" />
+		<result property="lecCode" column="LEC_CODE" />
+		<result property="memNo" column="MEM_NO" />
+		<result property="codeAtenSe" column="CODE_ATEN_SE" />
+		<result property="atenYn" column="ATEN_YN" />
+		<result property="atenRsn" column="ATEN_RSN" />
+		<result property="atenPruf" column="ATEN_PRUF" />
+		<result property="lecaCount" column="LECA_COUNT" />
+	</resultMap>
+	
+	<select id="listAtten" resultType="AttenadenceVO">
+		select * from ATTENADENCE
+	</select>
+	<select id="getAtten" parameterType="AttenadenceVO" resultType="AttenadenceVO">
+		select * from ATTENADENCE where ATEN_DE = #{atenDe}
+	</select>
+	
+	<insert id="insertAtten" parameterType="AttenadenceVO">
+		insert into ATTENADENCE (ATEN_DE, LEC_CODE, MEM_NO, CODE_ATEN_SE, ATEN_RSN, ATEN_PRUF) values(#{atenDe},#{lecCode},#{memNo},#{codeAtenSe},#{atenRsn},#{atenPruf})	
+	</insert>
+	
+	<update id="updateAtten" parameterType="AttenadenceVO">
+		UPDATE attenadence
+		SET
+		    aten_de = #{atenDe},
+		    lec_code = #{lecCode},
+		    mem_no = #{memNo},
+		    code_aten_se = #{codeAtenSe},
+		    aten_rsn = #{atenRsn},
+		    aten_pruf = #{atenPruf}
+		WHERE
+		        aten_de = #{atenDe}
+		    AND mem_no = #{memNo}
+		    AND lec_code = #{lecCode}	
+	</update>
+	
+	<delete id="deleteAtten" parameterType="AttenadenceVO">
+		delete from ATTENADENCE where ATEN_DE = #{atenDe}
+	</delete>
+
+	<!-- 강의코드로 강의명 찾기 -->
+	<select id="lecNmByCode" parameterType="String" resultType="AttenadenceVO">
+		SELECT
+		    l.lec_code,
+		    la.leca_nm
+		FROM
+		    professor p,
+		    lec_apply la,
+		    lecture   l
+		WHERE
+		        p.mem_no = la.mem_no
+		    AND l.leca_id = la.leca_id
+		    AND l.lec_code = #{lecCode}	
+	</select>
+	
+	<!-- 해당 교수 강의 목록 > 수강생 목록 -->
+	<select id="listStuByLec" parameterType="AttenadenceVO" resultType="AttenadenceVO">
+		/* com.ddit.proj.mapper.AttenadenceMapper.listStuByLec */
+		SELECT
+		    s.stu_yr,
+		    s.mem_no,
+		    c.col_nm,
+		    d.dep_nm,
+		    m.mem_nm,
+		    m.mem_tel,
+		    m.mem_col_code,
+		    m.mem_dep_code
+		FROM
+		    member      m
+		    LEFT JOIN student     s ON m.mem_no = s.mem_no
+		    LEFT JOIN department  d ON s.dep_code = d.dep_code
+		    LEFT JOIN college     c ON d.col_code = c.col_code
+		    INNER JOIN stu_lec     sl ON s.mem_no = sl.mem_no
+		    LEFT JOIN attenadence a ON sl.mem_no = a.mem_no
+		WHERE
+		    sl.lec_code = #{lecCode}
+		GROUP BY
+		    s.stu_yr,
+		    s.mem_no,
+		    c.col_nm,
+		    d.dep_nm,
+		    m.mem_nm,
+		    m.mem_tel,
+		    m.mem_col_code,
+		    m.mem_dep_code
+		ORDER BY
+		    m.mem_nm
+	</select>
+	
+	<!-- 선택한 강의의 시수와 학생별 출결 CNT -->
+	<select id="attendanceCnt" parameterType="hashmap" resultType="attenadenceVO">
+		SELECT  
+		(SELECT COUNT(code_aten_se) FROM ATTENADENCE WHERE LEC_Code = #{lecCode} AND mem_no = #{memNo} AND code_aten_se LIKE '%1') AS atenCome,
+        (SELECT COUNT(code_aten_se) FROM ATTENADENCE WHERE LEC_Code = #{lecCode} AND mem_no = #{memNo} AND code_aten_se LIKE '%2') AS atenLate,
+        (SELECT COUNT(code_aten_se) FROM ATTENADENCE WHERE LEC_Code = #{lecCode} AND mem_no = #{memNo} AND code_aten_se LIKE '%3') AS atenEarlyLeave,
+        (SELECT COUNT(code_aten_se) FROM ATTENADENCE WHERE LEC_Code = #{lecCode} AND mem_no = #{memNo} AND code_aten_se LIKE '%4') AS atenAbsent,
+        (SELECT COUNT(code_aten_se) FROM ATTENADENCE WHERE LEC_Code = #{lecCode} AND mem_no = #{memNo} AND code_aten_se LIKE '%5') AS atenOfiAbsent
+		FROM DUAL
+	</select>
+	
+	<!-- 출결표 -->
+	<select id="attenDetail" parameterType="hashmap" resultType="attenadenceVO">
+	SELECT 
+    	a.ATEN_DE
+	    , a.LEC_CODE
+	    , a.MEM_NO
+	    , a.CODE_ATEN_SE
+	    , a.ATEN_YN
+	    , a.ATEN_RSN
+	    , a.ATEN_PRUF
+	    , b.LECA_COUNT
+	FROM 
+	    ATTENADENCE a
+	JOIN
+	    LECTURE l ON a.LEC_CODE = l.LEC_CODE
+	JOIN
+	    LEC_APPLY b ON l.LECA_ID = b.LECA_ID
+	WHERE 
+	    a.LEC_Code = #{lecCode} 
+	    AND a.mem_no = #{memNo}
+  
+	</select>
+	
+	<!-- 학생별 출결 여부 확인 CNT -->
+	<select id="attenChkCnt" parameterType="hashMap" resultType="int">
+	SELECT
+	    COUNT(*) AS aten_cnt
+	FROM
+	    attenadence
+	WHERE
+	    aten_de = #{atenDe}
+	    AND lec_code = #{lecCode}
+	    AND mem_no = #{memNo}
+	</select>
+	  
+	  
+	<select id="attenStuDetail" parameterType="String" resultType="attenadenceVO">
+	SELECT
+	    aten_de,
+	    lec_code,
+	    mem_no,
+	    aten_yn,
+	    aten_rsn,
+	    aten_pruf
+	FROM
+	    attenadence
+	WHERE
+	    mem_no = #{memNo}
+	
+	</select>
+	
+	
+	<!-- 첨부파일 insert -->
+	<insert id="insertAttach" parameterType="AttachVO">
+		<selectKey order="BEFORE" keyProperty="fileId" resultType="string">
+			select 'atten' ||  LPAD(atten_yerin.nextval, 3, '0')   from dual
+		</selectKey>
+	
+    	INSERT INTO ATTACH
+			(FILE_ID
+			, FILE_NO
+			, FILE_PATH
+			, FILE_NM
+			, FILE_ORI_NM
+			, FILE_EXTSN
+			, FILE_SIZE
+			, FILE_DT
+			, FILE_THUMB_IMG)
+			VALUES
+			(#{fileId}
+			,(SELECT NVL(MAX(FILE_NO),0)+1 FROM ATTACH)
+			,#{filePath}
+			,#{fileNm}
+			,#{fileOriNm}
+			,#{fileExtsn}
+			,#{fileSize}
+			,SYSDATE
+			,'NULL')
+	</insert>
+	
+	<update id="updateAtt" parameterType="AttenadenceVO">
+	UPDATE ATTENADENCE
+	SET 
+		FILE_ID = #{fileId}
+	WHERE
+		ATEN_DE= #{atenDe} AND
+		LEC_CODE = #{lecCode} AND
+		MEM_NO =#{memNo}	
+	</update>
+	
+	
+	<!-- 학생 출결조회 -->
+	<select id="stuAtten" parameterType="searchVO" resultType="attenadenceVO">
+	 select * from
+              (select
+        			a.*,
+          			TO_CHAR(TO_DATE(a.ATEN_DE, 'YYYY-MM-DD'), 'FMMM') AS MONTH,  
+          			TO_CHAR(TO_DATE(a.ATEN_DE, 'YYYY-MM-DD'), 'FMDD') AS DAY,  
+        			rownum as rnum
+		        from
+                    ( SELECT
+				    		ATEN_DE,
+					    	LEC_CODE,
+					    	FILE_ID,
+					    	SUM(CASE WHEN CODE_ATEN_SE = '1' THEN 1 ELSE 0 END) AS ATEN_COME,
+					    	SUM(CASE WHEN CODE_ATEN_SE = '2' THEN 1 ELSE 0 END) AS ATEN_LATE,
+					    	SUM(CASE WHEN CODE_ATEN_SE = '3' THEN 1 ELSE 0 END) AS ATEN_EARLY_LEAVE,
+					    	SUM(CASE WHEN CODE_ATEN_SE = '4' THEN 1 ELSE 0 END) AS ATEN_ABSENT,
+					    	SUM(CASE WHEN CODE_ATEN_SE = '5' THEN 1 ELSE 0 END) AS ATEN_OFI_ABSENT
+						FROM attenadence
+						WHERE mem_no = #{memNo} and lec_code = #{lecCode}
+						GROUP BY ATEN_DE, LEC_CODE, FILE_ID
+						ORDER BY ATEN_DE ASC
+                     ) a
+                     where
+							  1=1
+ 						   <if test='searchMonth != 0'>
+                    		and TO_CHAR(TO_DATE(a.ATEN_DE, 'YYYY-MM-DD'), 'FMMM') = #{searchMonth}
+						    </if>
+						    <if test='searchDate != 0'>
+						    and TO_CHAR(TO_DATE(a.ATEN_DE, 'YYYY-MM-DD'), 'FMDD') = #{searchDate}
+						    </if>
+                    
+                )
+               where
+               		rnum between  #{firstIndex} + 1 and #{lastIndex}
+	
+	
+	
+<!--         select * -->
+<!--         from  -->
+<!--         	( -->
+<!--         		select -->
+<!--         			a.*, -->
+<!--           			TO_CHAR(TO_DATE(a.ATEN_DE, 'YYYY-MM-DD'), 'MM') AS MONTH,   -->
+<!--           			TO_CHAR(TO_DATE(a.ATEN_DE, 'YYYY-MM-DD'), 'DD') AS DAY,   -->
+<!--         			rownum as rnum -->
+<!-- 		        from -->
+<!-- 		        	( -->
+<!-- 		        		SELECT -->
+<!-- 				    		ATEN_DE, -->
+<!-- 					    	LEC_CODE, -->
+<!-- 					    	FILE_ID, -->
+<!-- 					    	SUM(CASE WHEN CODE_ATEN_SE = '1' THEN 1 ELSE 0 END) AS ATEN_COME, -->
+<!-- 					    	SUM(CASE WHEN CODE_ATEN_SE = '2' THEN 1 ELSE 0 END) AS ATEN_LATE, -->
+<!-- 					    	SUM(CASE WHEN CODE_ATEN_SE = '3' THEN 1 ELSE 0 END) AS ATEN_EARLY_LEAVE, -->
+<!-- 					    	SUM(CASE WHEN CODE_ATEN_SE = '4' THEN 1 ELSE 0 END) AS ATEN_ABSENT, -->
+<!-- 					    	SUM(CASE WHEN CODE_ATEN_SE = '5' THEN 1 ELSE 0 END) AS ATEN_OFI_ABSENT -->
+<!-- 						FROM attenadence -->
+<!-- 						WHERE mem_no = #{memNo} -->
+<!-- 						GROUP BY ATEN_DE, LEC_CODE, FILE_ID -->
+<!-- 						<trim prefix="AND"> -->
+<!-- 						    <choose> -->
+<!-- 						    	<when test='"m".equals(searchCondition)'> -->
+<!-- 						    	MONTH LIKE '%' -->
+<!-- 						    	</when> -->
+<!-- 						    	<when test='"d".equals(searchCondition)'> -->
+<!-- 						    	DAY LIKE '%' -->
+<!-- 						    	</when> -->
+<!-- 						    	<otherwise> -->
+<!-- 							    ( ATEN_DE LIKE '%' -->
+<!-- 							          OR ATEN_DE LIKE '%') -->
+<!-- 						    	</otherwise> -->
+<!-- 						    </choose> -->
+<!-- 					    </trim> -->
+<!-- 						ORDER BY ATEN_DE ASC -->
+<!-- 					) a -->
+<!-- 			) -->
+<!--         where rnum between #{firstIndex} + 1 and #{lastIndex} -->
+	</select>
+	
+	<!-- 학생 출결조회 전체 개수 -->
+	<select id="stuAttenCnt" parameterType="string" resultType="int">
+		SELECT
+	    	count(*) as cnt
+		FROM attenadence
+		WHERE mem_no = #{memNo} and lec_code = #{lecCode}
+	   <if test='searchMonth != 0'>
+			and TO_CHAR(TO_DATE(ATEN_DE, 'YYYY-MM-DD'), 'FMMM') = #{searchMonth}
+	    </if>
+	    <if test='searchDate != 0'>
+	    	and TO_CHAR(TO_DATE(ATEN_DE, 'YYYY-MM-DD'), 'FMDD') = #{searchDate}
+	    </if>   
+		ORDER BY ATEN_DE ASC	
+	</select>
+	
+	<!-- 출결 증빙자료 제출한 수강생 목록 -->
+	<select id="stuListAttenPruf" parameterType="string" resultType="AttenadenceVO">
+		SELECT
+		    m.mem_nm,
+		    m.mem_tel,
+		    c.col_nm,
+		    d.dep_nm,
+		    s.stu_yr,
+		    a.aten_de,
+		    a.lec_code,
+		    a.mem_no,
+		    a.code_aten_se,
+		    a.aten_yn,
+		    a.aten_rsn,
+		    a.aten_pruf,
+		    a.file_id
+		FROM
+		         attenadence a
+		    INNER JOIN member     m ON a.mem_no = m.mem_no
+		    INNER JOIN student    s ON s.mem_no = a.mem_no
+		    LEFT JOIN department d ON d.dep_code = m.mem_dep_code
+		    LEFT JOIN college    c ON c.col_code = d.col_code
+		WHERE
+		        lec_code = #{lecCode}
+		    AND ( file_id IS NOT NULL
+                OR file_id != 'null' )
+		ORDER BY
+		    aten_de DESC
+	</select>
+
+	<!-- 해당 날짜 출결 목록 -->
+	<select id="attenListByDate" parameterType="AttenadenceVO" resultType="AttenadenceVO">
+	SELECT
+	    aten_de,
+	    lec_code,
+	    mem_no,
+	    code_aten_se,
+	    aten_yn,
+	    aten_rsn,
+	    aten_pruf,
+	    file_id
+	FROM
+	    attenadence
+	WHERE
+	        lec_code = #{lecCode}
+	    AND aten_de = #{atenDe}
+	</select>
+	
+	<!-- 키워드 검색 조건 -->
+	<sql id="and">
+	    <if test="nm != null and nm != ''">
+	        AND ( m.mem_nm LIKE '%'
+                                   || #{keyword}
+                                   || '%'
+                  )
+	    </if>
+	    <if test="no != null and no != ''">
+	        AND (m.mem_no LIKE '%'
+                                   || #{keyword}
+                                   || '%' )
+	    </if>
+	</sql>
+	
+	<!-- 해당 강의 출결 증빙 수 -->
+	<select id="countPruf" parameterType="hashMap" resultType="int">
+	SELECT
+	    COUNT(*)
+	FROM
+	         attenadence a
+	    INNER JOIN member     m ON a.mem_no = m.mem_no
+	    INNER JOIN student    s ON s.mem_no = a.mem_no
+	    LEFT JOIN department d ON d.dep_code = m.mem_dep_code
+	    LEFT JOIN college    c ON c.col_code = d.col_code
+	WHERE
+	        lec_code = #{lecCode}
+	    AND ( file_id IS NOT NULL
+       		OR file_id != 'null' )
+	<include refid="and"></include>
+	ORDER BY
+	    aten_de DESC
+	</select>
+	
+	<!-- 출결 증빙자료 제출한 수강생 목록 (페이징) -->
+	<select id="listpruf" resultType="AttenadenceVO" parameterType="hashMap">
+	    SELECT
+		    *
+		FROM
+		    (
+		        SELECT
+		            m.mem_nm,
+		            m.mem_tel,
+		            c.col_nm,
+		            d.dep_nm,
+		            s.stu_yr,
+		            a.aten_de,
+		            a.lec_code,
+		            a.mem_no,
+		            a.code_aten_se,
+		            a.aten_yn,
+		            a.aten_rsn,
+		            a.aten_pruf,
+		            a.file_id,
+		            ROW_NUMBER()
+		            OVER(
+		                ORDER BY
+		                    a.aten_de DESC, m.mem_nm
+		            ) AS row_num
+		        FROM
+		                 attenadence a
+		            INNER JOIN member     m ON a.mem_no = m.mem_no
+		            INNER JOIN student    s ON s.mem_no = a.mem_no
+		            LEFT JOIN department d ON d.dep_code = m.mem_dep_code
+		            LEFT JOIN college    c ON c.col_code = d.col_code
+		        WHERE
+		                lec_code = #{lecCode}
+		            AND ( file_id IS NOT NULL
+		                  OR file_id != 'null' )
+		            <include refid="and"></include>
+		    )
+		WHERE
+		    row_num BETWEEN #{startRow} AND #{endRow}
+		ORDER BY
+		    row_num
+	</select>
+	
+	<!-- 출결 증빙 승인 -->
+	<update id="approveAtten" parameterType="AttenadenceVO">
+		UPDATE attenadence
+		SET
+		    code_aten_se = '5',
+		    aten_yn = 'Y'
+		WHERE
+		        aten_de = #{atenDe}
+		    AND mem_no = #{memNo}
+		    AND lec_code = #{lecCode}
+	</update>
+	
+	<!-- 출결 증빙 반려 -->
+	<update id="rejectAtten" parameterType="AttenadenceVO">
+		UPDATE attenadence
+		SET
+		    aten_yn = 'N'
+		WHERE
+		        aten_de = #{atenDe}
+		    AND mem_no = #{memNo}
+		    AND lec_code = #{lecCode}
+	</update>
+	
+</mapper>

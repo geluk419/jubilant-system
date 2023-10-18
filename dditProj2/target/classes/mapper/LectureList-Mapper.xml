@@ -1,0 +1,88 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ddit.proj.mapper.LectureListMapper">
+
+	<!--  리스트 조회 (페이징) -->
+	<select id="listLecture" resultType="LectureVO" parameterType="hashMap">
+	    SELECT T.lec_code
+	    		 , T.leca_id
+                 , T.lec_yn
+	        	 , T.leca_yr
+	             , T.leca_sem
+                 , T.leca_trg
+	             , T.leca_nm
+	             , T.dep_nm
+	             , T.mem_nm
+	             , T.mem_tel	
+	             , T.leca_dt
+	    FROM (
+	     SELECT rownum as rnum
+	        	 ,a.lec_code
+                 , a.lec_yn
+	        	 , b.leca_yr
+	             , b.leca_sem
+                 , b.leca_trg
+	             , b.leca_nm
+	             , b.leca_id
+	             , e.dep_nm
+	             , c.mem_nm
+	             , d.mem_tel	  
+	             , d.mem_no 
+	             , b.leca_dt                
+	        FROM 
+             lecture a
+	        , lec_apply b
+	        , professor c
+	        , member d
+	        , department e
+	        WHERE a.lec_del_yn = 'N' 
+            and a.leca_id = b.leca_id
+            and b.mem_no = c.mem_no
+            and c.mem_no = d.mem_no
+            and c.dep_code = e.dep_code
+	        <include refid="where" />
+	    ) T
+	     where T.rnum  between  ((#{currentPage}-1)*#{size} +1)  and  #{currentPage} *#{size}  
+	     order by T.leca_dt DESC
+	</select>
+	
+	<!-- 키워드 검색 조건 -->
+	<sql id="where">
+	    <if test="keyword!=null and keyword!=''">
+	        AND (
+	            b.leca_nm LIKE '%' || #{keyword} || '%'
+	            OR c.mem_nm LIKE '%' || #{keyword} || '%'
+	            OR d.mem_tel LIKE '%' || #{keyword} || '%'
+	            OR e.dep_nm LIKE '%' || #{keyword} || '%'
+	        )
+	    </if>
+	</sql>
+	
+	<select id="getLecTotal" parameterType="hashMap" resultType="int">
+	    SELECT COUNT(*) FROM (
+	        SELECT 1
+	        FROM 
+             lecture a
+	        , lec_apply b
+	        , professor c
+	        , member d
+	        , department e
+	        WHERE a.lec_del_yn = 'N' 
+            and a.leca_id = b.leca_id
+            and b.mem_no = c.mem_no
+            and c.mem_no = d.mem_no
+            and c.dep_code = e.dep_code
+	        <include refid="where"></include>
+	    ) subquery
+	</select>
+	
+	<update id="updLecStatus" parameterType="LectureVO">
+		UPDATE LECTURE
+		SET LEC_YN = CASE 
+		WHEN LEC_YN = 'Y' THEN 'N' ELSE 'Y' END
+		WHERE LECA_ID = #{lecaId} AND LEC_YN = #{lecYn}
+			
+	</update>
+
+	
+</mapper>

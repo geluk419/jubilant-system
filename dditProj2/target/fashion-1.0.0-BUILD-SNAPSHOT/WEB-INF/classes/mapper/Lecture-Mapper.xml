@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ddit.proj.mapper.LectureMapper">
+
+<resultMap type="com.ddit.proj.vo.LecApplyVO" id="LecApplyVO">
+	<result property="lecaId" column="LECA_ID" />
+	<result property="memNo" column="MEM_NO" />
+	<result property="subCode" column="SUB_CODE" />
+	<result property="lecaYr" column="LECA_YR" />
+	<result property="lecaSem" column="LECA_SEM" />
+	<result property="lecaNm" column="LECA_NM" />
+	<result property="lecaSeCode" column="LECA_SE_CODE" />
+	<result property="lecaTrg" column="LECA_TRG" />
+	<result property="lecaCrd" column="LECA_CRD" />
+	<result property="lecaTime" column="LECA_TIME" />
+	<result property="lecaCap" column="LECA_CAP" />
+	<result property="lecaDt" column="LECA_DT" />
+	<result property="lecaStdCode" column="LECA_STD_CODE" />
+	<result property="lecaYn" column="LECA_YN" />
+	
+</resultMap>
+
+<resultMap type="com.ddit.proj.vo.LectureVO" id="LectureVO">
+	<result property="lecCode" column="LEC_CODE" />
+	<result property="subCode" column="SUB_CODE" />
+	<result property="lecaId" column="LECA_ID" />
+	<result property="lecStatYn" column="LEC_STAT_YN" />
+	<result property="lecHcnt" column="LEC_HCNT" />
+	<result property="lecYn" column="LEC_YN" />
+	<result property="lecDelYn" column="LEC_DEL_YN" />
+	<result property="roomNo" column="ROOM_NO" />
+	<result property="bldCode" column="BLD_CODE" />
+	<result property="field" column="FIELD" />
+	<collection property="lecApplyVO" resultMap="LecApplyVO"/>
+	<collection property="lectureDetailVO" resultMap="LectureDetailVO"/>
+</resultMap>
+
+<resultMap type="com.ddit.proj.vo.LectureDetailVO" id="LectureDetailVO">
+	<result property="lecCode" column="LEC_CODE" />
+	<result property="lecdWeek" column="LECD_WEEK" />
+	<result property="lecdSt" column="LECD_ST" />
+	<result property="lecdEt" column="LECD_ET" />
+</resultMap>
+
+<select id="listLecture" resultType="com.ddit.proj.vo.LectureVO">
+	
+SELECT
+	a.LEC_CODE, a.SUB_CODE, a.LECA_ID, a.LEC_STAT_YN, a.LEC_HCNT, a.LEC_YN, a.LEC_DEL_YN, a.ROOM_NO, a.BLD_CODE, a.FIELD,
+	b.LECA_ID, b.MEM_NO, b.SUB_CODE, b.LECA_YR, b.LECA_SEM, b.LECA_NM, b.LECA_SE_CODE, b.LECA_TRG, b.LECA_CRD, b.LECA_TIME, b.LECA_CAP, b.LECA_DT, b.LECA_STD_CODE, b.LECA_YN,
+	c.LEC_CODE, c.LECD_WEEK, c.LECD_ST, c.LECD_ET
+FROM LECTURE a
+	LEFT JOIN LEC_APPLY b
+		ON a.LECA_ID = b.LECA_ID
+	LEFT JOIN LECTURE_DETAIL c
+		ON a.LEC_CODE = c.LEC_CODE
+</select>
+
+</mapper>

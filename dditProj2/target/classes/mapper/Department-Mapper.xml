@@ -1,0 +1,168 @@
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ddit.proj.mapper.DepartmentMapper">
+	<!-- {"colCode":"ART","depNm":"미용학과","depCode":"A2","depDc":"asdf","depCap":"2","depTel":"0421231234","provost":"201701P001","TA":"201803E008"} -->
+	<insert id="insertDepartment" parameterType="DepartmentVO">
+		 INSERT INTO department (DEP_CODE, COL_CODE, DEP_NM, DEP_DC, DEP_DRHF, DEP_CAP, DEP_TEL, DEP_DEL_YN, MEM_NO)
+		 VALUES(#{depCode},#{colCode},#{depNm},#{depDc},#{depDrhf},#{depCap},#{depTel},'N',#{memNo})
+	</insert>
+	
+	<!-- 학과장 불러오는 쿼리 -->
+	<select id="selectProvostList" parameterType="String" resultType="ProfessorVO">
+        SELECT A.MEM_NO
+		         , (SELECT C.MEM_NM FROM MEMBER C WHERE C.MEM_NO = A.MEM_NO) MEM_NM
+		FROM  PROFESSOR A
+		WHERE A.DEP_CODE = #{depCode}
+		AND    PRO_POS_YN = 'N'
+    </select>
+
+	<!-- 조교 불러오는 쿼리  -->	
+	<select id="selectTAList" parameterType="String" resultType="DepartmentVO">
+	    SELECT A.MEM_NO
+		     , (SELECT C.MEM_NM FROM MEMBER C WHERE C.MEM_NO = A.MEM_NO) MEM_NM
+		FROM EMPLOYEE A
+		WHERE A.CODE_EMP_DV = '조교'
+		AND A.DEP_CODE IS NULL
+	</select>
+	
+	<!-- 단과대 불러오는 쿼리 -->
+	<select id="selectColList" parameterType="String" resultType="DepartmentVO">
+		SELECT CODE_ID, CODE_NM
+		FROM CODE
+		WHERE GROUP_ID = #{groupId}
+	</select>
+	
+	<!-- 학과 리스트 불러오는 쿼리 -->
+<!-- 	<select id="listDepartment" resultType="DepartmentVO"> -->
+<!--         SELECT dep_nm -->
+<!--         	 , dep_code  -->
+<!--        	FROM department -->
+<!--        	WHERE dep_del_yn = 'N' -->
+<!--     </select> -->
+	<select id="listDepartment" parameterType="hashMap" resultType="DepartmentVO">
+	    SELECT d.dep_code, c.code_nm AS col_code, d.dep_nm
+	    FROM department d
+	    LEFT JOIN code c ON d.col_code = c.code_id
+	    ORDER BY c.code_nm
+	    <include refid="where"></include>
+	</select>
+	
+	<sql id="where">
+	    <if test="keyword!=null and keyword!=''">
+	        WHERE d.dep_nm LIKE '%' || #{keyword} || '%'
+	    </if>
+	</sql>
+	
+	<!-- 단과대 선택 후 조회 -->
+	<select id="selectCodeNm" parameterType="String" resultType="DepartmentVO">
+	SELECT d.dep_code
+	     , c.code_nm AS col_code
+	     , d.dep_nm
+	    FROM department d
+	    LEFT JOIN code c ON d.col_code = c.code_id
+        where d.col_code = #{codeId}
+	</select>
+
+    
+    <!-- 학과 상세 보기 쿼리 -->
+	<select id="getDepartmentVO" parameterType="DepartmentVO" resultType="DepartmentVO">
+		SELECT  A.DEP_CODE
+			  , A.COL_CODE
+			  , A.DEP_NM
+			  , A.DEP_DC
+			  , A.DEP_DRHF
+			  , A.DEP_CAP
+			  , A.DEP_TEL
+			  , A.DEP_DEL_YN
+			  , A.MEM_NO
+   ,   (SELECT 
+   				B.MEM_NM FROM MEMBER B WHERE B.MEM_NO = A.DEP_DRHF) PROF_NM
+   ,   (SELECT 
+   				C.MEM_NM FROM MEMBER C WHERE C.MEM_NO = A.MEM_NO) EMP_NM
+		FROM   DEPARTMENT A
+		WHERE A.DEP_CODE = #{depCode}
+	</select>
+	
+<!-- 	<update id="deleteDepartment" parameterType="DepartmentVO"> -->
+<!-- 		UPDATE department -->
+<!-- 		SET dep_del_yn = 'Y' -->
+<!-- 		WHERE DEP_CODE = #{depCode} -->
+<!-- 	</update> -->
+	
+	<!-- 학과 삭제 쿼리 -->
+	<delete id="deleteDepartment" parameterType="DepartmentVO">
+		DELETE department
+		WHERE DEP_CODE = #{depCode}
+	</delete>
+	
+	<!-- 공통 학과 데이터 가져오기 -->
+<!-- 	<select id="getCodeDetail" parameterType="String" resultType="CodeDetailVO"> -->
+<!-- 		SELECT T.CODE_DETAIL_ID, T.CODE_ID, T.GROUP_ID, -->
+<!--        CASE WHEN T.CNT > 0 THEN T.CODE_DETAIL_NM || '(선택불가)' -->
+<!--             ELSE T.CODE_DETAIL_NM || '(선택가능)' -->
+<!--        END CODE_DETAIL_NM, -->
+<!--        T.CODE_DETAIL_ORD -->
+<!-- FROM ( -->
+<!--     SELECT A.CODE_DETAIL_ID, A.CODE_ID, A.GROUP_ID, A.CODE_DETAIL_NM, -->
+<!--            (SELECT COUNT(*) FROM DEPARTMENT B WHERE B.DEP_CODE = A.CODE_DETAIL_ID AND B.DEP_DEL_YN = 'N') CNT, -->
+<!--            A.CODE_DETAIL_ORD -->
+<!--     FROM CODE_DETAIL A -->
+<!--     WHERE A.CODE_ID = #{codeId} -->
+<!-- ) T -->
+<!-- 	</select> -->
+	<select id="getCodeDetail" parameterType="String" resultType="CodeDetailVO">
+		SELECT T.CODE_DETAIL_ID
+			 , T.CODE_ID
+			 , T.GROUP_ID
+	         ,  CASE WHEN T.CNT > 0 THEN T.CODE_DETAIL_NM || '(선택불가)'
+	                   ELSE T.CODE_DETAIL_NM || '(선택가능)'
+	            END CODE_DETAIL_NM
+	         ,  T.CODE_DETAIL_ORD
+		FROM
+		(
+		    SELECT A.CODE_DETAIL_ID
+		    	 , A.CODE_ID
+		    	 , A.GROUP_ID
+		             , A.CODE_DETAIL_NM 
+		             , (SELECT COUNT(*) FROM DEPARTMENT B WHERE B.DEP_CODE = A.CODE_DETAIL_ID) CNT
+		             , A.CODE_DETAIL_ORD
+		    FROM  CODE_DETAIL A
+		    WHERE   A.CODE_ID = #{codeId}
+		) T
+	</select>
+	
+	<!-- 1) 학과장 변경 초기화 -->
+	<update id="bProvost" parameterType="ProfessorVO">
+		UPDATE PROFESSOR
+		SET    PRO_POS_YN = 'N'
+		WHERE  DEP_CODE = #{depCode}
+	</update>
+	
+	<!-- 2) 학과장 변경  -->
+	<update id="aProvost" parameterType="ProfessorVO">
+		UPDATE PROFESSOR
+		SET    PRO_POS_YN = 'Y'
+		WHERE  MEM_NO = #{memNo}
+		AND    DEP_CODE = #{depCode}
+	</update>
+	
+	<!-- 조교 상태 변경 (depCode에 데이터 넣기) -->
+	<update id="updateTA" parameterType="EmployeeVO">
+		UPDATE EMPLOYEE
+		SET    DEP_CODE = #{depCode}
+		WHERE  MEM_NO = #{memNo}
+	</update>
+	
+	<!-- 학과 정보 수정 -->
+	<update id="updateDepartment" parameterType="DepartmentVO">
+	UPDATE DEPARTMENT
+	SET 
+	    DEP_DC = #{depDc},
+	    DEP_CAP = #{depCap},
+	    DEP_TEL = #{depTel},
+	    DEP_DRHF = #{depDrhf},
+	    MEM_NO = #{memNo}
+	WHERE
+	    DEP_CODE = #{depCode}
+	</update>
+	
+</mapper>

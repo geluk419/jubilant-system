@@ -1,0 +1,199 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ddit.proj.mapper.ScheduleMapper">
+
+	<select id="getOneSchedule" parameterType="String" resultType="ScheduleVO">
+	/* com.ddit.proj.mapper.ScheduleMapper.getRecordApply */
+	SELECT
+		a.sch_code
+			 , a.mem_no
+			 , a.sch_ttl
+			 , TO_CHAR(a.sch_dt, 'YYYY-MM-DD') AS sch_dt
+			 , TO_CHAR(a.sch_st, 'YYYY-MM-DD') AS sch_st
+			 , TO_CHAR(a.sch_et, 'YYYY-MM-DD') AS sch_et
+			 , a.CODE_SCH_SE
+			 , a.CODE_SCH_MEM
+			 , c_sch_se.code_nm AS code_sch_se_nm
+			 , c_sch_mem.code_nm AS code_sch_mem_nm
+			 , m.mem_nm AS mem_nm
+	FROM
+		SCHEDULE a
+			JOIN (
+			SELECT group_id
+			FROM group_code b
+			WHERE b.group_yn = 'Y' and b.group_id = 'SCHE'
+		) d
+		ON a.SCH_DEL_YN = 'N'
+		LEFT JOIN code c_sch_se
+			ON a.code_sch_se = c_sch_se.code_id
+			AND d.group_id = c_sch_se.group_id
+		LEFT JOIN code c_sch_mem
+			ON a.code_sch_mem = c_sch_mem.code_id
+			AND d.group_id = c_sch_mem.group_id
+		LEFT JOIN MEMBER m ON a.mem_no = m.mem_no
+	WHERE
+		a.SCH_DEL_YN = 'N'
+	AND a.SCH_CODE = #{schCode}
+	</select>
+
+
+	<select id="getAllSchedule" resultType="ScheduleVO">
+		/* com.ddit.proj.mapper.ScheduleMapper.getAllRecordApply */
+		SELECT
+			a.sch_code
+				 , a.mem_no
+				 , a.sch_ttl
+				 , TO_CHAR(a.sch_dt, 'YYYY-MM-DD') AS sch_dt
+				 , TO_CHAR(a.sch_st, 'YYYY-MM-DD') AS sch_st
+				 , TO_CHAR(a.sch_et, 'YYYY-MM-DD') AS sch_et
+		     , a.CODE_SCH_SE
+		     , a.CODE_SCH_MEM
+				 , c_sch_se.code_nm AS code_sch_se_nm
+				 , c_sch_mem.code_nm AS code_sch_mem_nm
+				 , m.mem_nm AS mem_nm
+		FROM
+			SCHEDULE a
+				JOIN (
+				SELECT group_id
+				FROM group_code b
+				WHERE b.group_yn = 'Y' and b.group_id = 'SCHE'
+			) d
+						 ON a.SCH_DEL_YN = 'N'
+				LEFT JOIN code c_sch_se
+					ON a.code_sch_se = c_sch_se.code_id
+						AND d.group_id = c_sch_se.group_id
+				LEFT JOIN code c_sch_mem
+					ON a.code_sch_mem = c_sch_mem.code_id
+						AND d.group_id = c_sch_mem.group_id
+				LEFT JOIN MEMBER m ON a.mem_no = m.mem_no
+		WHERE
+			a.SCH_DEL_YN = 'N'
+		ORDER BY a.sch_st DESC, a.sch_et DESC
+	</select>
+
+
+	<insert id="insertSchedule" parameterType="ScheduleVO">
+		/* com.ddit.proj.mapper.ScheduleMapper.insertRecordApply */
+		INSERT INTO schedule (
+			sch_code
+			, mem_no
+			, sch_ttl
+			, sch_dt
+			, sch_st
+			, sch_et
+			, code_sch_se
+			, code_sch_mem
+		) VALUES (
+			TO_CHAR(
+				(SELECT MAX(REGEXP_REPLACE(sch_code, '[^0-9]', ''))
+				FROM schedule)+1
+		 	) /* 숫자 이외의 문자를 제거한 뒤 NUMBER로 형변환 후, sch_code 중 MAX 값을 문자로 저장 */
+			, #{memNo}
+			, #{schTtl}
+			, SYSDATE
+			, TO_DATE(#{schSt}, 'YYYY-MM-DD')
+			, TO_DATE(#{schEt}, 'YYYY-MM-DD')
+			, #{codeSchSe}
+			, #{codeSchMem}
+		)
+	</insert>
+
+
+	<update id="updateSchedule" parameterType="ScheduleVO">
+		/* com.ddit.proj.mapper.ScheduleMapper.updateRecordApply */
+		UPDATE schedule
+		SET
+			sch_ttl = #{schTtl}
+			, sch_st = TO_DATE(#{schSt}, 'YYYY-MM-DD')
+			, sch_et = TO_DATE(#{schEt}, 'YYYY-MM-DD')
+			, code_sch_se = #{codeSchSe}
+			, code_sch_mem = #{codeSchMem}
+			, u_mem_no = #{memNo}
+			, u_sch_updde = SYSDATE
+		WHERE
+			sch_code = #{schCode}
+	</update>
+
+	<update id="deleteSchedule" parameterType="String">
+		/* com.ddit.proj.mapper.ScheduleMapper.deleteRecordApply */
+		UPDATE schedule
+		SET
+			SCH_DEL_YN = 'Y'
+		WHERE
+			SCH_CODE = #{codeSch}
+	</update>
+
+	<select id="getCodeSchSeNm" resultType="ScheduleVO">
+		SELECT
+			b.CODE_ID AS codeSchSe
+		  , b.CODE_NM codeSchSeNm
+		FROM
+			group_code a
+			, code b
+		WHERE
+			a.group_yn = 'Y'
+			AND a.group_id = 'SCHE'
+			AND a.GROUP_ID = b.GROUP_ID
+			AND LENGTH(b.CODE_ID) = 2
+		ORDER BY b.CODE_ID
+	</select>
+
+	<select id="getCodeSchSeMemNm" resultType="ScheduleVO">
+		SELECT
+			b.CODE_ID AS codeSchMem
+		  , b.CODE_NM AS codeSchSeMemNm
+		FROM
+			group_code a
+		  , code b
+		WHERE
+			a.group_yn = 'Y'
+			AND a.group_id = 'SCHE'
+			AND a.GROUP_ID = b.GROUP_ID
+			AND LENGTH(b.CODE_ID) = 1
+		ORDER BY b.CODE_ID
+	</select>
+
+	<select id="getSeletSchedule" parameterType="map" resultType="ScheduleVO">
+	/* com.ddit.proj.mapper.ScheduleMapper.getSeletSchedule */
+		SELECT
+			a.sch_code
+		  , a.mem_no
+		  , a.sch_ttl
+		  , TO_CHAR(a.sch_dt, 'YYYY-MM-DD') AS sch_dt
+		  , TO_CHAR(a.sch_st, 'YYYY-MM-DD') AS sch_st
+		  , TO_CHAR(a.sch_et, 'YYYY-MM-DD') AS sch_et
+		  , a.code_sch_se
+		  , a.code_sch_mem
+		  , c_sch_se.code_nm AS code_sch_se_nm
+		  , c_sch_mem.code_nm AS code_sch_mem_nm
+		  , m.mem_nm AS mem_nm
+		FROM
+			SCHEDULE a
+				JOIN (
+				SELECT group_id
+				FROM group_code b
+				WHERE b.group_yn = 'Y' and b.group_id = 'SCHE'
+			) d
+				ON a.SCH_DEL_YN = 'N'
+			LEFT JOIN code c_sch_se
+				ON a.code_sch_se = c_sch_se.code_id
+				AND d.group_id = c_sch_se.group_id
+			LEFT JOIN code c_sch_mem
+				ON a.code_sch_mem = c_sch_mem.code_id
+				AND d.group_id = c_sch_mem.group_id
+			LEFT JOIN MEMBER m ON a.mem_no = m.mem_no
+		WHERE
+			a.sch_del_yn = 'N'
+		<if test="selectedValue != null and selectedValue != ''">
+			AND a.code_sch_se = #{selectedValue}
+		</if>
+		<if test="selectedYear != null and selectedYear != ''">
+			AND TO_CHAR(a.sch_st, 'YYYY') = #{selectedYear}
+		</if>
+		<if test="selectedMonth != null and selectedMonth != ''">
+			AND TO_CHAR(a.sch_st, 'MM') = #{selectedMonth}
+		</if>
+		ORDER BY a.sch_st DESC, a.sch_et DESC
+	</select>
+
+</mapper>

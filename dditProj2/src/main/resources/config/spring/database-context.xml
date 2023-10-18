@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xmlns:mybatis-spring="http://mybatis.org/schema/mybatis-spring"
+	xmlns:tx="http://www.springframework.org/schema/tx"
+	xsi:schemaLocation="http://mybatis.org/schema/mybatis-spring http://mybatis.org/schema/mybatis-spring-1.2.xsd
+		http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd
+		http://www.springframework.org/schema/tx http://www.springframework.org/schema/tx/spring-tx-4.3.xsd">
+
+	<bean id="hikariConfig" class="com.zaxxer.hikari.HikariConfig">
+		<property name="driverClassName" value="oracle.jdbc.OracleDriver" />
+		<!-- localhost 대신 ip 로 바꿀 것 -->
+		<property name="jdbcUrl" value="jdbc:oracle:thin:@112.220.114.130:1521:XE" />
+		<!-- 본인  걸로 설정 -->
+		<property name="username" value="team3_202303F" />
+		<property name="password" value="java" />
+		<property name="maximumPoolSize" value="3" />
+		<property name="maxLifetime" value="30000" />
+	</bean>
+
+	<bean id="datasource" class="com.zaxxer.hikari.HikariDataSource" destroy-method="close">
+		<constructor-arg ref="hikariConfig" />
+	</bean>
+
+	<bean id="sqlSessionFactory"
+		class="org.mybatis.spring.SqlSessionFactoryBean">
+		<property name="dataSource" ref="datasource" />
+		<property name="configLocation" value="classpath:config/mybatis/mybatis-config.xml" />
+		<property name="mapperLocations" value="classpath:mapper/*-Mapper.xml" />
+	</bean>
+
+	<!-- 트랜잭션 관리자의 빈을 정의 -->
+	<bean id="transactionManager"
+		class="org.springframework.jdbc.datasource.DataSourceTransactionManager">
+		<property name="dataSource" ref="datasource" />
+	</bean>	
+	
+	<!-- 애너테이션 기반의 트랜잭션 제어를 활성화 함 -->
+	<tx:annotation-driven/>
+	
+	<!-- 패스워드 인코더 
+	 <bean id="bCryptPasswordEncoder" class="org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder" />
+	-->
+	
+	<!--  본인 맵퍼 패키지로 설정 @Mapper 생략가능 -->
+	<mybatis-spring:scan base-package="com.ddit.proj.mapper"/>
+</beans>

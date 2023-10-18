@@ -1,0 +1,170 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ddit.proj.mapper.MessageMapper">
+		<resultMap type="memberVO" id="memberMap">
+		<result property="rnum" column="RNUM" />
+		<result property="memBir" column="MEM_BIR" />
+		<result property="memNo" column="MEM_NO" />
+		<result property="memPass" column="MEM_PASS" />
+		<result property="memDelYn" column="MEM_DEL_YN" />
+		<result property="memNm" column="MEM_NM" />
+		<result property="memNme" column="MEM_NME" />
+		<result property="memTel" column="MEM_TEL" />
+		<result property="memTel2" column="MEM_TEL2" />
+		<result property="memZip" column="MEM_ZIP" />
+		<result property="memAddr1" column="MEM_ADDR1" />
+		<result property="memAddr2" column="MEM_ADDR2" />
+		<result property="memPic" column="MEM_PIC" />
+		<result property="memDepo" column="MEM_DEPO" />
+		<result property="memBankCode" column="MEM_BANK_CODE" />
+		<result property="codeNm" column="CODE_NM" />
+		<result property="memMl" column="MEM_ML" />
+		<result property="memColCode" column="MEM_COL_CODE" />
+		<result property="memDepCode" column="MEM_DEP_CODE" />
+		<result property="memEmpSe" column="MEM_EMP_SE" />
+		<result property="memEmpDv" column="MEM_EMP_DV" />
+		<result property="memType" column="MEM_TYPE" />
+		<result property="memAccount" column="MEM_ACCOUNT" />
+		<result property="depNm" column="DEP_NM" />
+		<!-- 여러 개의 권한 -->
+		<collection property="authVOList" resultMap="authMap" />
+	</resultMap>
+	
+	<resultMap type="authVO" id="authMap" >
+		<result property="author" column="AUTHOR" />
+		<result property="memNo" column="MEM_NO" />
+	</resultMap>
+
+	<select id="read" resultMap="memberMap" parameterType="String">
+		SELECT mem.MEM_NO
+			, MEM_PASS
+			, MEM_DEL_YN
+			, MEM_NM, MEM_NME
+			, MEM_TEL
+			, MEM_TEL2
+			, MEM_ACCOUNT
+			, MEM_ZIP
+			, MEM_ADDR1
+			, MEM_ADDR2
+			, MEM_PIC
+			, MEM_DEPO
+			, MEM_BANK_CODE
+			, (SELECT CODE_NM FROM CODE WHERE GROUP_ID = 'BANK' AND CODE_ID = MEM_BANK_CODE) CODE_NM
+			, MEM_ML
+			, MEM_BIR
+			, AUTHOR
+		FROM MEMBER mem
+		INNER JOIN AUTHORITY auth ON mem.MEM_NO = auth.MEM_NO
+		WHERE mem.MEM_NO = #{memNo}
+	</select>
+	
+	<select id="listMember" resultMap="memberMap" parameterType="hashMap">
+		WITH U AS (
+			SELECT ROW_NUMBER() OVER (ORDER BY MEM_NO ASC) AS RNUM
+		           , T.*
+	        FROM
+	        (
+			    SELECT MEM_NO
+			           , MEM_TYPE
+			           , MEM_PASS
+			           , MEM_DEL_YN
+			           , MEM_NM
+			           , MEM_NME
+			           , MEM_TEL
+			           , MEM_TEL2
+			           , MEM_ZIP
+			           , MEM_ADDR1
+			           , MEM_ADDR2
+			           , MEM_PIC
+			           , MEM_DEPO
+			           , MEM_BANK_CODE
+			           , MEM_ML
+			           , MEM_BIR
+			           , MEM_COL_CODE
+			           , MEM_DEP_CODE
+			           , (SELECT B.DEP_NM FROM DEPARTMENT B WHERE MEM_DEP_CODE = B.DEP_CODE) AS DEP_NM
+			           , MEM_EMP_SE
+			           , MEM_EMP_DV
+			    FROM MEMBER 
+			    WHERE MEM_DEL_YN = 'N'
+		      ) T
+        	WHERE 1 = 1
+		    <include refid="where"></include>
+		)
+		SELECT MEM_NO
+			, MEM_TYPE
+			, MEM_PASS
+			, MEM_DEL_YN
+			, MEM_NM
+			, MEM_NME
+			, MEM_TEL
+			, MEM_TEL2
+			, MEM_ZIP
+			, MEM_ADDR1
+			, MEM_ADDR2
+			, MEM_PIC
+			, MEM_DEPO
+			, MEM_BANK_CODE
+			, MEM_ML
+			, MEM_BIR
+			, MEM_COL_CODE
+		    , MEM_DEP_CODE
+		    , (SELECT B.DEP_NM FROM DEPARTMENT B WHERE MEM_DEP_CODE = B.DEP_CODE) AS DEP_NM
+		    , MEM_EMP_SE
+		    , MEM_EMP_DV
+		FROM U
+		WHERE RNUM BETWEEN ((#{currentPage} - 1) * #{size} + 1) AND (#{currentPage} * #{size})	
+		ORDER BY MEM_NO ASC
+	</select>
+	
+	<sql id="where">
+		<if test="keyword!=null and keyword!=''">
+		AND (
+			MEM_NO LIKE '%' || #{keyword} || '%'
+			OR MEM_DEP_CODE IN(SELECT DEP_CODE FROM DEPARTMENT B WHERE  DEP_NM LIKE '%' || #{keyword} || '%')
+			OR MEM_TYPE LIKE '%' || #{keyword} || '%'
+			OR MEM_NM LIKE '%' || #{keyword} || '%'
+		)
+		</if>
+	</sql>
+	
+	<select id="getMemberTotal" parameterType="hashMap" resultType="int">
+		SELECT COUNT(*) FROM MEMBER 
+  		WHERE MEM_DEL_YN = 'N' 
+  		<include refid="where"></include>
+	</select>
+	
+	<select id="getMember" parameterType="MemberVO" resultType="MemberVO">
+		select * from member where mem_no = #{memNo}
+	</select>
+	
+	<!-- 라디오버튼 체크시 해당하는 학번/교번 자동 생성 -->
+<!-- 	<select id="chooseMemNo" resultType="String" parameterType="String"> -->
+<!-- 		SELECT -->
+<!-- 		<choose> -->
+<!-- 			<when test="memberType=='학생'"> -->
+<!-- 				NVL(SUBSTR(MAX(MEM_NO),1,7) || TRIM(TO_CHAR(SUBSTR(MAX(MEM_NO),8)+1,'000')),TO_CHAR(SYSDATE,'YYYYMM')||'S001') memNO -->
+<!-- 			</when> -->
+<!-- 			<when test="memberType=='교수'"> -->
+<!-- 				NVL(SUBSTR(MAX(MEM_NO),1,7) || TRIM(TO_CHAR(SUBSTR(MAX(MEM_NO),8)+1,'000')),TO_CHAR(SYSDATE,'YYYYMM')||'P001') memNO -->
+<!-- 			</when> -->
+<!-- 			<when test="memberType=='교직원'"> -->
+<!-- 				NVL(SUBSTR(MAX(MEM_NO),1,7) || TRIM(TO_CHAR(SUBSTR(MAX(MEM_NO),8)+1,'000')),TO_CHAR(SYSDATE,'YYYYMM')||'E001') memNO -->
+<!-- 			</when> -->
+<!-- 		</choose> -->
+<!-- 			FROM MEMBER -->
+<!-- 			WHERE MEM_NO LIKE  -->
+<!-- 		<choose> -->
+<!-- 			<when test="memberType=='학생'"> -->
+<!-- 				TO_CHAR(SYSDATE,'YYYYMM')||'S' || '%' -->
+<!-- 			</when> -->
+<!-- 			<when test="memberType=='교수'"> -->
+<!-- 				TO_CHAR(SYSDATE,'YYYYMM')||'P' || '%' -->
+<!-- 			</when> -->
+<!-- 			<when test="memberType=='교직원'"> -->
+<!-- 				TO_CHAR(SYSDATE,'YYYYMM')||'E' || '%' -->
+<!-- 			</when> -->
+<!-- 		</choose> -->
+<!-- 	</select> -->
+	
+</mapper>

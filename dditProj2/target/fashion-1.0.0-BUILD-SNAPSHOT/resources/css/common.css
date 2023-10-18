@@ -1,0 +1,19 @@
+.bg-my {
+  background-color: rgb(182, 26, 63);
+}
+.bg-white {
+	background-color: #FFFFFF;
+}
+.text-my {
+  color: rgb(182, 26, 63);
+}
+.text {
+  font-family: Georgia, "맑은 고딕", serif;
+}
+
+.fs-16 { font-size: 16px; }
+.fs-18 { font-size: 18px; }
+.fs-20 { font-size: 20px; }
+.fs-24 { font-size: 24px; }
+.fs-30 { font-size: 30px; }
+.fs-32 { font-size: 32px; }

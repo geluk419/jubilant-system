@@ -1,0 +1,81 @@
+lecaStdcode = '';
+			
+		    lecaYrSem = pthis.children[0].innerText;
+// 		   	console.log("lecaYrSem",lecaYrSem);
+		   	lecayr = lecaYrSem.substring(0,4);
+// 		   	console.log("lecayr",lecayr);
+		   	lecasem = lecaYrSem.substring(5,6);
+// 		   	console.log("lecasem",lecasem);
+		   	lecatrg = pthis.children[1].innerText;
+		   	lecacrd = pthis.children[5].innerText;
+// 		   	console.log("pthis.children[7].innerText",pthis.children[7].innerText);
+		   	lecaStdcode = pthis.children[7].innerText;
+		   	if(pthis.children[7].innerText =="상대평가"){
+		   		lecaStdcode = 1;
+		   	}else if(pthis.children[7].innerText =="절대평가"){
+				lecaStdcode = 2;		   		
+		   	}
+		   	
+// 		   	console.log("lecaStdcode",lecaStdcode);
+		   	
+		    for (let i = 0; i < lecaYr.options.length; i++) {
+		        if (lecaYr.options[i].value === lecayr) {
+		            lecaYr.options[i].selected = true;
+		            break; 
+		        }
+		    }
+		    for (let i = 0; i < lecaSem.options.length; i++) {
+		        if (lecaSem.options[i].value === lecasem) {
+		            lecaSem.options[i].selected = true;
+		            break; 
+		        }
+		    }
+		    for (let i = 0; i < lecaTrg.options.length; i++) {
+		        if (lecaTrg.options[i].value === lecatrg) {
+		        	lecaTrg.options[i].selected = true;
+		            break; 
+		        }
+		    }
+		    for (let i = 0; i < lecaCrd.options.length; i++) {
+		        if (lecaCrd.options[i].value === lecacrd) {
+		        	lecaCrd.options[i].selected = true;
+		            break; 
+		        }
+		    }
+		    for (let i = 0; i < lecaStdCode.options.length; i++) {
+// 		        console.log("lecaStdCode.options[i].value",lecaStdCode.options[i].value);
+		        if (lecaStdCode.options[i].value == lecaStdcode) {
+		        	lecaStdCode.options[i].selected = true;
+		            break; 
+		        }
+		    }
+			
+		    lecaNm.value = pthis.children[2].innerText;
+ 		    subCode.value = pthis.children[9].innerText;
+ 		    getsubSeCode();
+ 		    lecaCount.value = pthis.children[10].innerText;
+ 		    lecaCap.value = pthis.children[3].innerText;
+ 		    
+ 		    selectedBuilding = pthis.children[11].innerText;
+ 		    selectedRoom = pthis.children[12].innerText;
+//  			console.log("selectedBuilding",selectedBuilding)
+ 			console.log(selectedRoom)
+ 		    
+ 			for (let i = 0; i < bldCode.options.length; i++) {
+ 			    if (bldCode.options[i].value === selectedBuilding) {
+ 			        bldCode.options[i].selected = true;
+ 			        break;
+ 			    }
+ 			}
+ 			updateRoomOptions();
+ 			
+ 			for (let i = 0; i < roomNo.options.length; i++) {
+ 			     console.log(roomNo.options[i].value);
+ 			     console.log(roomNo.options[i].value === selectedRoom);
+//  			     console.log("roomNo.options.length",roomNo.options.length);
+//  			     console.log("roomNo.options[i].value",roomNo.options[i].value);
+ 			    if (roomNo.options[i].value == selectedRoom) {
+ 			    	roomNo.options[i].selected = true;
+ 			    	break;
+ 			    }
+ 			}

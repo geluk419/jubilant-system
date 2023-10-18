@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ddit.proj.mapper.EvaluationMapper">
+
+	<!-- 강의평가-->
+	<insert id="insertEvaluation" parameterType="EvaluationVO">
+		INSERT INTO EVALUATION (
+		    MEM_NO,
+		    LEC_CODE,
+		    EVAL_CON1_CODE, 
+		    EVAL_CON2_CODE, 
+		    EVAL_CON3_CODE, 
+		    EVAL_CON4_CODE, 
+		    EVAL_CON5_CODE
+            
+		) VALUES (
+		    #{memNo},
+            #{lecCode},
+            #{evalCon1Code},
+            #{evalCon2Code},
+            #{evalCon3Code},
+            #{evalCon4Code},
+            #{evalCon5Code}
+    	)
+	</insert>
+	
+</mapper>

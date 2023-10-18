@@ -1,0 +1,79 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ddit.proj.mapper.LecNoticeMapper">
+
+<select id="getlecCode" parameterType="String" resultType="LecNoticeVO">
+	SELECT
+	    a.lec_code,    /* 강의코드 */
+	    a.lec_stat_yn, /* 개강여부 */
+	    a.lec_del_yn,  /* 삭제여부 */
+	    b.leca_nm,     /* 강의명 */
+	    b.leca_yr,     /* 년도 */
+	    b.leca_sem,    /* 학기 */
+	    b.leca_trg    /* 개설학년 */
+	FROM
+	    lecture   a,
+	    lec_apply b
+	WHERE
+	        b.mem_no = #{memNo}
+	    AND a.leca_id = b.leca_id
+	    and a.lec_yn = 'Y'
+</select>	
+	
+<insert id="insertLecNotice" parameterType="LecNoticeVO">
+ <selectKey resultType="String" order="BEFORE" keyProperty="fileId">
+ 	SELECT 'lecnotice' ||  (NVL(MAX(TO_NUMBER(SUBSTR(FILE_ID, 10))), 0) + 1) FROM LEC_NOTICE
+ </selectKey>
+ INSERT INTO LEC_NOTICE
+    (LECN_CODE
+    , LEC_CODE
+    , LECN_TTL
+    , LECN_CON
+    , LECN_DE
+    , FILE_ID)
+    VALUES(
+    (SELECT 'lecnCode' ||  (NVL(MAX(TO_NUMBER(SUBSTR(LECN_CODE, 9))), 0) + 1) FROM LEC_NOTICE)
+    ,#{lecCode}
+    ,#{lecnTtl}
+    ,#{lecnCon}
+    ,SYSDATE
+    ,#{fileId}
+    )
+</insert>	
+
+<select id="getListLecNotice" parameterType="String" resultType="LecNoticeVO">
+	SELECT 
+		LECN_CODE
+		, LEC_CODE
+		, LECN_CATA_CODE
+		, LECN_TTL
+		, LECN_CON
+		, LECN_DE
+		, TO_CHAR(LECN_UPDDE, 'YYYY-MM-DD') AS LECN_UPDDE
+		, FILE_ID
+		FROM LEC_NOTICE 
+	WHERE LEC_CODE = #{lecCode}
+	ORDER BY LECN_DE DESC
+</select>
+
+<!-- 강의게시판 수정 -->
+   <update id="updatelecNotice" parameterType="LecNoticeVO">
+   	UPDATE LEC_NOTICE
+		SET LECN_TTL = #{lecnTtl}
+		,LECN_CON = #{lecnCon}
+		,LECN_UPDDE= SYSDATE
+	WHERE LECN_CODE = #{lecnCode}
+   </update>
+
+<!-- 강의게시판 삭제 -->
+	<delete id="deletelecNotice" parameterType="LecNoticeVO">
+    DELETE FROM LEC_NOTICE
+	WHERE
+	    LECN_CODE = #{lecnCode}
+    </delete>
+
+    
+</mapper>
+
+
+

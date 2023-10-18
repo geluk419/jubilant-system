@@ -1,0 +1,192 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ddit.proj.mapper.RecordApplyMapper">
+
+	<select id="getRecordApply" parameterType="RecordApplyVO" resultType="RecordApplyVO">
+	/* com.ddit.proj.mapper.RecordApplyMapper.getRecordApply */
+		SELECT
+			REC_CODE,
+			EMP_MEM_NO,
+			REC_SE_CODE,
+			REC_YR,
+			REC_SEM,
+			REC_RSN,
+			TO_CHAR(REC_DT, 'YYYY-MM-DD') AS REC_DT,
+			REC_YN,
+			REC_RETURN,
+			TO_CHAR(REC_SDE, 'YYYY-MM-DD') AS REC_SDE,
+			TO_CHAR(REC_EDE, 'YYYY-MM-DD') AS REC_EDE
+		FROM
+			RECORD_APPLICATION
+		WHERE
+			REC_DEL_YN = 'N' AND
+			STU_MEM_NO = #{StuMemNo}
+		ORDER BY
+			REC_SDE DESC, REC_YR DESC
+	</select>
+
+
+	<select id="getAllRecordApply" parameterType="String" resultType="RecordApplyVO">
+		/* com.ddit.proj.mapper.RecordApplyMapper.getAllRecordApply */
+		SELECT
+			a.rec_code
+			, a.stu_mem_no
+			, a.emp_mem_no
+			, a.rec_yr
+			, a.rec_sem
+			, a.rec_rsn
+			, TO_CHAR(a.rec_dt, 'YYYY-MM-DD') AS rec_dt
+			, a.rec_yn
+			, a.rec_return
+			, TO_CHAR(a.rec_sde, 'YYYY-MM-DD') AS rec_sde
+			, TO_CHAR(a.rec_ede, 'YYYY-MM-DD') AS rec_ede
+			, c.code_nm AS rec_se_code
+		FROM
+			record_application a
+				JOIN
+			(SELECT group_id
+			 FROM group_code b
+			 WHERE b.group_yn = 'Y' and b.group_id = 'STUD') d
+			ON a.rec_del_yn = 'N'
+				INNER JOIN
+			code c
+			ON
+				a.rec_se_code = c.code_id
+			AND
+				d.group_id = c.group_id
+			AND
+				a.STU_MEM_NO = #{memNo}
+		  ORDER BY a.REC_SDE DESC, a.REC_SEM DESC
+	</select>
+
+
+<!-- 학적 신청 추가 Insert -->
+	<insert id="insertRecordApply" parameterType="RecordApplyVO">
+		/* com.ddit.proj.mapper.RecordApplyMapper.insertRecordApply */
+	INSERT INTO record_application (
+			 rec_code
+		 , stu_mem_no
+		 , rec_se_code
+		 , rec_yr
+		 , rec_sem
+		 , rec_rsn
+		 , rec_dt
+		 , rec_sde
+		 , rec_ede
+	) VALUES (
+		 (SELECT MAX(rec_code) FROM record_application)+1
+		 , #{stuMemNo}
+		 , #{recSeCode}
+		 , #{recYr}
+		 , #{recSem}
+		 , #{recRsn}
+		 , SYSDATE
+		 , TO_DATE(#{recSde}, 'YYYY-MM-DD')
+		 , TO_DATE(#{recEde}, 'YYYY-MM-DD')
+  )
+	</insert>
+
+	<update id="deleteRecordApply" parameterType="RecordApplyVO">
+		/* com.ddit.proj.mapper.RecordApplyMapper.deleteRecordApply */
+		UPDATE record_application
+		SET
+			rec_del_yn = 'Y'
+		WHERE
+			rec_code = #{recCode}
+
+	</update>
+
+	<select id="recEdeMax" resultType="String">
+		SELECT
+			TO_CHAR(MAX(REC_EDE), 'YYYY-MM-DD') AS MaxDate
+		FROM
+			RECORD_APPLICATION
+		WHERE
+			REC_DEL_YN = 'N' AND
+			REC_YN = 'Y'
+	</select>
+
+	<!-- 반려 사유 보기 -->
+	<select id="getRecDetail" parameterType="String" resultType="RecordApplyVO">
+		SELECT
+			r.REC_CODE
+		, r.REC_SE_CODE
+		, r.REC_RSN
+		, m.MEM_NM AS memNm
+		, r.REC_RETURN
+		FROM
+			RECORD_APPLICATION r
+			INNER JOIN MEMBER m ON r.EMP_MEM_NO = m.MEM_NO
+		WHERE
+			r.REC_CODE = #{recCode}
+			AND r.REC_DEL_YN = 'N'
+	</select>
+	
+	
+	<!-- 학적 구분 불러오기 -->
+	<select id="selectRecMan" parameterType="String" resultType="CodeVO">
+		SELECT * FROM CODE 
+		WHERE GROUP_ID = 'STUD' 
+		AND CODE_ID IN ('02', '04', '05')
+	</select>
+	
+	<!-- 신청기간 설정 -->
+
+	<!-- 신청한 학생 리스트 -->
+	<select id="selectRecStu" resultType="RecordStuVO">
+		SELECT 
+		    S.MEM_NO
+		  , RA.REC_YR
+		  , S.DEP_CODE
+		  , RA.REC_SE_CODE
+		  , RA.REC_SEM
+		  , S.STU_YR
+		  , S.MEM_NM
+		FROM RECORD_APPLICATION RA, STUDENT S
+		WHERE RA.STU_MEM_NO= S.MEM_NO
+		AND RA.REC_DEL_YN = 'N'
+		ORDER BY ra.REC_YR DESC, ra.REC_SEM DESC
+	</select>
+	
+	<!-- 신청한 학생 상세-->
+	<select id="getRecStu" resultType="RecordStuVO" parameterType="RecordStuVO">
+		SELECT
+		      REC_YR
+		    , REC_SEM
+		    , STU_MEM_NO
+		    , REC_SE_CODE
+		    , TO_CHAR(REC_DT, 'YYYY-MM-DD') AS REC_DT
+		    , REC_RSN
+		FROM
+		    RECORD_APPLICATION
+		WHERE
+		    REC_SE_CODE = #{recSeCode} AND
+		    REC_YR = #{recYr} AND REC_SEM = #{recSem} AND
+		    STU_MEM_NO = #{memNo}
+				AND REC_DEL_YN = 'N'
+	</select>
+	
+	<!-- 승인 처리 -->
+	<update id="recOk" parameterType="RecordStuVO">
+		UPDATE RECORD_APPLICATION
+		SET    EMP_MEM_NO = #{empMemNo}, 
+		       REC_YN = 'Y'
+		WHERE  REC_YR = #{recYr}
+		  AND  REC_SEM = #{recSem}
+		  AND  STU_MEM_NO = #{memNo}
+		  AND  REC_SE_CODE = #{recSeCode}
+	</update>
+	
+	<!-- 반려 처리 -->
+	<update id="recReject" parameterType="RecordStuVO">
+		UPDATE RECORD_APPLICATION
+		SET    EMP_MEM_NO = #{empMemNo},
+		       REC_RETURN = #{recReturn}
+		WHERE  REC_YR = #{recYr}
+		  AND  REC_SEM = #{recSem}
+		  AND  STU_MEM_NO = #{memNo}
+		  AND  REC_SE_CODE = #{recSeCode}
+	</update>
+	
+
+</mapper>

@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ddit.proj.mapper.LoginMapper">
+	<!-- ID 찾기 쿼리 -->
+	<select id="findId" parameterType="MemberVO" resultType="String">
+	    SELECT  mem_no  
+	    FROM    member
+	    WHERE   mem_nm = #{memNm} 
+	    AND     mem_ml = #{memMl}
+	</select>
+	
+	<!-- PW 찾기 쿼리 -->
+<!-- 	<update id="findPw" parameterType="MemberVO"> -->
+<!-- 		UPDATE 	member -->
+<!-- 	    SET     mem_pass = #{memPass} -->
+<!-- 		WHERE   mem_ml = #{memMl} -->
+<!-- 		AND     mem_no = #{memNo} -->
+<!-- 	</update> -->
+	
+<!-- 	<select id="findPwCheck" resultType="int"> -->
+<!-- 		SELECT count(*)  -->
+<!-- 		FROM   member  -->
+<!-- 		WHERE  mem_ml = #{memMl}  -->
+<!-- 		AND    mem_no = #{memNo} -->
+<!-- 	</select> -->
+	
+	<!-- ID로 멤버 정보 조회 -->
+	<select id="findMemberById" resultType="MemberVO">
+	    SELECT * FROM member 
+	    WHERE memNo = #{memNo}
+	</select>
+	
+	<!-- 비밀번호 업데이트 -->
+	<update id="updatePassword" parameterType="MemberVO">
+	    UPDATE member
+	    SET mem_pass = #{memPass}
+	    WHERE mem_ml = #{memMl}
+	    AND mem_no = #{memNo}
+	</update>
+	
+	
+	
+	
+	
+</mapper>

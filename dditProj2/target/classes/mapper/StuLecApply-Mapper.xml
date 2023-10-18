@@ -1,0 +1,285 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ddit.proj.mapper.StuLecApplyMapper">
+
+	<insert id="insertStuLecApply" parameterType="StuLecApplyVO">
+		INSERT INTO STU_LEC(
+			mem_no
+			, lec_code
+			, sl_crd
+			, sl_yr
+			, sl_sem
+		) VALUES (
+			#{memNo}
+			, #{lecCode}
+			, TO_NUMBER(#{lecaCrd})
+			, TO_NUMBER(TO_CHAR(SYSDATE, 'YYYY'))
+			, TO_NUMBER(#{lecaSem})
+		)
+	</insert>
+
+	<update id="updateStuLecApply" parameterType="StuLecApplyVO">
+
+	</update>
+
+	<delete id="deleteStuLecApply" parameterType="StuLecApplyVO">
+		DELETE FROM STU_LEC
+		WHERE
+			MEM_NO = #{memNo}
+			AND LEC_CODE = #{lecCode}
+	</delete>
+
+	<select id="countStuLecApply" parameterType="map" resultType="int">
+		SELECT
+			COUNT(s.MEM_NO)
+		FROM
+			STU_LEC s
+		WHERE
+			s.MEM_NO = #{memNo}
+			AND s.LEC_CODE = #{lecCode}
+	</select>
+
+	<select id="selectStuLecApplyList" parameterType="map" resultType="StuLecApplyVO">
+	/* com.ddit.proj.mapper.StuLecApplyMapper.selectStuLecApplyList */
+	SELECT T.* FROM(
+		SELECT
+			ROWNUM AS RNUM
+			, a.lec_code     	/* 강의 코드*/
+		  	, a.sub_code    	/* 과목 코드 : 어떤 과목의 강의인가 */
+		 	, a.leca_id     	/* 강의계획서 코드 */
+		 	, a.lec_hcnt    	/* 강의 수강인원 */
+		 	, a.room_no     	/* 강의실 호수 */
+		 	, a.bld_code    	/* 건물코드 */
+		 	, b.leca_count  	/* 강의계획 수업일수 */
+		 	, b.leca_yr     	/* 강의계획 년도 */
+		 	, b.leca_sem    	/* 강의계획 학기 */
+		 	, b.leca_nm     	/* 강의계획 강의명 */
+		 	, b.leca_se_code 	/* 강의계획 이수구분 */
+		 	, b.leca_trg    	/* 강의계획 개설학년 */
+		 	, b.leca_crd    	/* 강의계획 이수학점 */
+		 	, b.leca_cap    	/* 강의계획 학생정원 */
+			, c.sub_nm			/* 과목의 과목이름 */
+			, d.dep_nm			/* 학과의 학과이름 */
+			, b.mem_no			/* 강의계획서의 교수번호 */
+			, m.mem_nm			/* 사용자에 교수이름 */
+		FROM
+			lecture a       				/* 강의 테이블 */
+			INNER JOIN lec_apply b   		/* 강의 계획서 테이블 */
+				ON a.leca_id = b.leca_id
+			INNER JOIN subject c 			/* 과목 테이블 */
+				ON a.sub_code = c.sub_code
+			INNER JOIN department d			/* 학과 테이블 */
+				ON c.dep_code = d.dep_code
+			INNER JOIN member m				/* 사용자 테이블 */
+				ON b.mem_no = m.mem_no
+		WHERE
+			a.lec_del_yn = 'N'      		/* 강의 삭제여부  */
+			AND a.lec_stat_yn = 'Y' 		/* 강의 개강여부 */
+		  AND a.lec_yn = 'Y'				/* 강의 승인여부 */
+			AND NOT EXISTS (
+				SELECT 1
+				FROM STU_LEC sl
+				WHERE sl.MEM_NO = #{memNo} AND sl.lec_code = a.lec_code
+			)
+		<if test="inputClass != null and inputClass != ''">
+			AND d.dep_code = #{inputClass}
+		</if>
+		<if test="inputYear != null and inputYear != ''">
+			AND b.leca_sem = TO_NUMBER(#{inputYear})
+		</if>
+		<if test="inputSe != null and inputSe != ''">
+			AND b.leca_se_code = #{inputSe}
+		</if>
+		<if test="inputPro != null and inputPro != ''">
+			AND m.mem_nm = #{inputPro}
+		</if>
+		<if test="inputWord != null and inputWord != ''">
+			AND c.sub_nm LIKE '%' || #{inputWord} || '%'
+		</if>
+		ORDER BY b.leca_yr DESC, b.leca_sem DESC
+	) T
+	WHERE
+		RNUM BETWEEN ((#{currentPage} - 1) * #{size} + 1) AND (#{currentPage} * #{size})
+	</select>
+
+	<!-- 페이징 용 count -->
+	<select id="totalStuLecApplyList" parameterType="map" resultType="StuLecApplyVO">
+		/* com.ddit.proj.mapper.StuLecApplyMapper.totalStuLecApplyList */
+		SELECT
+		a.lec_code      /* 강의 코드*/
+		, a.sub_code    /* 과목 코드 : 어떤 과목의 강의인가 */
+		, a.leca_id     /* 강의계획서 코드 */
+		, a.lec_hcnt    /* 강의 수강인원 */
+		, a.room_no     /* 강의실 호수 */
+		, a.bld_code    /* 건물코드 */
+		, b.leca_count  /* 강의계획 수업일수 */
+		, b.leca_yr     /* 강의계획 년도 */
+		, b.leca_sem    /* 강의계획 학기 */
+		, b.leca_nm     /* 강의계획 강의명 */
+		, b.leca_se_code /* 강의계획 이수구분 */
+		, b.leca_trg    /* 강의계획 개설학년 */
+		, b.leca_crd    /* 강의계획 이수학점 */
+		, b.leca_cap    /* 강의계획 학생정원 */
+		, c.sub_nm			/* 과목의 과목이름 */
+		, d.dep_nm			/* 학과의 학과이름 */
+		, b.mem_no			/* 강의계획서의 교수번호 */
+		, m.mem_nm			/* 사용자에 교수이름 */
+		FROM
+		lecture a       /* 강의 테이블 */
+		INNER JOIN lec_apply b   	/* 강의 계획서 테이블 */
+		ON a.leca_id = b.leca_id
+		INNER JOIN subject c 			/* 과목 테이블 */
+		ON a.sub_code = c.sub_code
+		INNER JOIN department d		/* 학과 테이블 */
+		ON c.dep_code = d.dep_code
+		INNER JOIN member m				/* 사용자 테이블 */
+		ON b.mem_no = m.mem_no
+		WHERE
+		a.lec_del_yn = 'N'      /* 강의 삭제여부  */
+		AND a.lec_stat_yn = 'Y' /* 강의 개강여부 */
+		AND a.lec_yn = 'Y'			/* 강의 승인여부 */
+		AND NOT EXISTS (
+			SELECT 1
+			FROM STU_LEC sl
+			WHERE sl.MEM_NO = #{memNo}
+			  AND sl.lec_code = a.lec_code
+		)
+		<if test="inputClass != null and inputClass != ''">
+			AND d.dep_code = #{inputClass}
+		</if>
+		<if test="inputYear != null and inputYear != ''">
+			AND b.leca_sem = TO_NUMBER(#{inputYear})
+		</if>
+		<if test="inputSe != null and inputSe != ''">
+			AND b.leca_se_code = #{inputSe}
+		</if>
+		<if test="inputPro != null and inputPro != ''">
+			AND m.mem_nm = #{inputPro}
+		</if>
+		<if test="inputWord != null and inputWord != ''">
+			AND c.sub_nm LIKE '%' || #{inputWord} || '%'
+		</if>
+		ORDER BY b.leca_yr DESC, b.leca_sem DESC
+	</select>
+
+	<select id="getLecApplySelect" resultType="DepartmentVO">
+		SELECT
+			DEP_CODE
+			, DEP_NM
+			, DEP_CAP
+		FROM
+			DEPARTMENT
+		WHERE
+			DEP_DEL_YN = 'N'
+	</select>
+
+	<select id="selectStudent" parameterType="String" resultType="StuLecApplyVO">
+		SELECT
+			m.mem_dep_code
+				 , d.dep_nm
+				 , s.stu_yr
+				 , s.stu_sem
+				 , TO_CHAR(SUM(sl.sl_crd)) AS leca_crd
+		FROM
+			member m
+				INNER JOIN student s ON m.mem_no = s.mem_no
+				INNER JOIN department d ON m.mem_dep_code = d.dep_code
+				LEFT JOIN stu_lec sl ON m.mem_no = sl.mem_no
+		WHERE
+			m.mem_no = #{memNo}
+			AND (
+				sl.sl_yr IS NULL  -- sl 테이블과 매칭되는 레코드가 없는 경우
+				OR (
+							sl.sl_yr = TO_NUMBER(EXTRACT(YEAR FROM SYSDATE))
+						AND (
+								(EXTRACT(MONTH FROM SYSDATE) BETWEEN 2 AND 8 AND sl.sl_sem = 1)
+								OR (
+										(EXTRACT(MONTH FROM SYSDATE) = 1
+											OR EXTRACT(MONTH FROM SYSDATE) BETWEEN 9 AND 12) AND sl.sl_sem = 2
+									)
+							)
+					)
+			)
+		GROUP BY
+			m.mem_dep_code, d.dep_nm, s.stu_yr, s.stu_sem
+	</select>
+
+	<select id="selectStuLecApply" parameterType="String" resultType="StuLecApplyVO">
+	/* com.ddit.proj.mapper.StuLecApplyMapper.selectStuLecApply */
+		SELECT
+			a.LEC_CODE						/* 강의 코드  */
+		  , a.LECA_ID 						/* 강의 강의계획서아이디 */
+		  , b2.BLD_NM						/* 건물 이름 */
+		  , a.ROOM_NO						/* 강의 강의실호수 */
+		  , c.LECD_WEEK						/* 강의상세 강의요일 */
+		  , c.LECD_ST						/* 강의상세 시작교시 */
+		  , c.LECD_ET						/* 강의상세 종료교시 */
+		  , s.SUB_NM						/* 과목명 */
+		  , b.LECA_SE_CODE					/* 강의계획서 이수구분*/
+		  , b.LECA_NM 						/* 강의계획서 강의명 */
+		  , b.LECA_YR						/* 강의계획서 년도 */
+		  , b.LECA_SEM						/* 강의계획서 학기 */
+		  , b.LECA_TRG						/* 강의계획서 개설학년 */
+		  , b.LECA_CRD						/* 강의계획서 이수학점 */
+		  , b.LECA_COUNT					/* 강의계획서 총수업일수 */
+		  , b.LECA_CAP						/* 강의계획서 최대정원 */
+		  , co.CODE_NM						/* 평가기준 이름 */
+		  , d.DEP_NM AS DEP_NM				/* 개설한 학과 이름 */
+		  , m.MEM_NM						/* 교수 이름 */
+		  , d2.DEP_NM AS MEM_DEP_NM			/* 교수 학과 이름 */
+		  , m.MEM_TEL						/* 교수 연락처 */
+		  , m.MEM_ML						/* 교수 이메일 */
+		FROM LEC_APPLY b					/* 강의계획서 테이블 */
+			LEFT JOIN LECTURE a				/* 강의 테이블 */
+				on b.LECA_ID = a.LECA_ID
+			LEFT JOIN LECTURE_DETAIL c		/* 강의상세 테이블 */
+				on a.LEC_CODE = c.LEC_CODE
+			INNER JOIN SUBJECT s			/* 과목 테이블 (개설한 학과 이름) */
+				on a.SUB_CODE = s.SUB_CODE
+			INNER JOIN DEPARTMENT d			/* 학과 테이블 (개설한 학과 이름) */
+				on s.DEP_CODE = d.DEP_CODE
+			INNER JOIN BUILDING b2			/* 건물 테이블 */
+				on a.BLD_CODE = b2.BLD_CODE
+			INNER JOIN MEMBER m				/* 사용자 테이블 */
+				on b.MEM_NO = m.MEM_NO
+			INNER JOIN DEPARTMENT d2		/* 학과 테이블 (교수 소속 학과 이름) */
+				on m.MEM_DEP_CODE = d2.DEP_CODE
+			INNER JOIN CODE co				/* 공통코드 테이블 (평가기준)*/
+				on co.GROUP_ID = 'LEES'
+				AND b.LECA_STD_CODE = co.CODE_ID
+		WHERE
+			a.LEC_STAT_YN = 'Y'				/* 강의 개강여부 */
+			AND a.LEC_DEL_YN = 'N'			/* 강의 삭제여부 */
+			AND a.LECA_ID = #{lecaId}
+	</select>
+
+	<select id="getStuLecList" parameterType="String" resultType="StuLecApplyVO">
+		SELECT
+				S.LEC_CODE
+			, LA.LECA_NM
+			, LA.LECA_YR
+			, LA.LECA_SEM
+			, LA.LECA_SE_CODE
+			, LA.LECA_CRD
+			, LD.LECD_WEEK
+			,	LD.LECD_ST
+			, LD.LECD_ET
+		FROM STU_LEC S
+		INNER JOIN LECTURE L
+				on S.LEC_CODE = L.LEC_CODE
+		INNER JOIN LEC_APPLY LA
+		    on L.LECA_ID = LA.LECA_ID
+		INNER JOIN LECTURE_DETAIL LD
+		    on L.LEC_CODE = LD.LEC_CODE
+		WHERE
+				S.MEM_NO = #{memNo}
+		  	AND S.SL_YR = TO_CHAR(SYSDATE, 'YYYY')
+				AND S.SL_SEM =
+				CASE
+					WHEN TO_DATE(SYSDATE, 'YYYY-MM-DD') BETWEEN TO_DATE('03-01', 'MM-DD')
+					    AND TO_DATE('08-01', 'MM-DD') THEN 1
+					ELSE 2
+				END
+	</select>
+
+</mapper>

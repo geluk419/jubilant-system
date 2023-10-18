@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ddit.proj.mapper.AdminMyPageMapper">
+	
+	<!-- 재직 상태 불러오는 쿼리  -->
+	<select id="seStatus" parameterType="String" resultType="AdminMyPageVO">
+		SELECT
+            c.code_nm
+        FROM
+            employee e
+        INNER JOIN
+            code c ON e.code_emp_se = c.code_id
+        WHERE
+             c.group_id = 'EMPL'
+        AND  mem_no = #{memNo}
+	</select>
+	
+	<!-- 부서 불러오는 쿼리 -->
+	<select id="empDv" parameterType="String" resultType="AdminMyPageVO">
+		SELECT
+            c.code_nm
+        FROM
+            employee e
+        INNER JOIN
+            code c ON e.code_emp_dv = c.code_id
+        WHERE 
+            c.group_id = 'EMPD'
+        AND mem_no = #{memNo}
+	</select>
+
+	<!-- 은행 리스트 불러오기 -->
+	<select id="selectBankList" parameterType="String" resultType="CodeVO">
+		SELECT code_id
+			 , code_nm
+	 	FROM   code
+	 	WHERE  group_id = 'BANK'
+	</select>
+
+	<!-- 마이페이지 내 개인정보 수정 쿼리 -->
+	<update id="updateInfo" parameterType="MemberVO">
+		UPDATE member
+		SET
+			mem_nm = #{memNm},
+			mem_nme = #{memNme},
+			mem_ml = #{memMl},
+			mem_tel = #{memTel},
+			mem_zip = #{memZip},
+			mem_addr1 = #{memAddr1},
+			mem_addr2 = #{memAddr2},
+			mem_bank_code = #{memBankCode},
+			mem_account = #{memAccount},
+			mem_depo = #{memDepo},
+			mem_pic = #{memPic}
+		WHERE
+			mem_no = #{memNo}
+	</update>
+	
+	<select id="checkPass" parameterType="String" resultType="String">
+		SELECT mem_pass FROM member WHERE mem_no =  #{memNo}
+	</select>
+
+</mapper>

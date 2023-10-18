@@ -1,0 +1,72 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ddit.proj.mapper.MemberMapper">
+	<resultMap type="MemberVO" id="memberMap">
+		<id property="memNo" column="memNo" />
+		<result property="memPass" column="memPass" />
+		<result property="memDelYn" column="memDelYn" />
+		<result property="memNm" column="memNm" />
+		<result property="memNmE" column="memNmE" />
+		<result property="memTel" column="memTel" />
+		<result property="memTel2" column="memTel2" />
+		<result property="memZip" column="memZip" />
+		<result property="memAddr1" column="memAddr1" />
+		<result property="memAddr2" column="memAddr2" />
+		<result property="memPic" column="memPic" />
+		<result property="memDepo" column="memDepo" />
+		<result property="memBankCode" column="memBankCode" />
+		<result property="memMl" column="memMl" />
+		<collection property="authVOList" resultMap="authMap" />
+	</resultMap>
+	
+	<resultMap type="AuthVO" id="authMap" >
+		<result property="memNo" column="memNo" />
+		<result property="author" column="author" />		
+	</resultMap>
+	
+	<select id="read" resultMap="memberMap" parameterType="int">
+		SELECT mem.MEM_NO, MEM_PASS, MEM_DEL_YN, MEM_NM, MEM_NME, MEM_TEL, MEM_TEL2, MEM_ZIP, MEM_ADDR1, MEM_ADDR2, MEM_PIC, MEM_DEPO, MEM_BANK_CODE, MEM_ML, AUTHOR
+		FROM MEMBER mem
+		INNER JOIN AUTHORITY auth ON mem.MEM_NO = auth.MEM_NO
+		WHERE mem.MEM_NO = #{memNo}
+	</select>
+	
+	<select id="listMember" resultType="memberVO">
+		select * from member
+	</select>
+	
+	<select id="getMember" parameterType="MemberVO" resultType="MemberVO">
+		select * from member where mem_no = #{memNo}
+	</select>
+	
+	<insert id="insertMember" parameterType="MemberVO">
+		INSERT INTO MEMBER (MEM_NO, MEM_PASS, MEM_DEL_YN, MEM_NM, MEM_NME, MEM_TEL, MEM_TEL2, MEM_ZIP, MEM_ADDR1, MEM_ADDR2, MEM_PIC, MEM_DEPO, MEM_BANK_CODE, MEM_ML)
+		VALUES (seq_member.nextval, #{memPass}, #{memDelYn}, #{memNm}, #{memNmE}, #{memTel}, #{memTel2}, #{memZip}, #{memAddr1}, #{memAddr2}, #{memPic}, #{memDepo}, #{memBankCode}, #{memMl})
+	</insert>
+	
+	<update id="updateMember" parameterType="MemberVO">
+		UPDATE MEMBER
+		SET
+		MEM_PASS= #{memPass},
+		MEM_DEL_YN= #{memDelYn},
+		MEM_NM= #{memNm},
+		MEM_NME= #{memNmE},
+		MEM_TEL= #{memTel},
+		MEM_TEL2= #{memTel2},
+		MEM_ZIP= #{memZip},
+		MEM_ADDR1= #{memAddr1},
+		MEM_ADDR2= #{memAddr2},
+		MEM_PIC= #{memPic},
+		MEM_DEPO= #{memDepo},
+		MEM_BANK_CODE= #{memBankCode},
+		MEM_ML= #{memMl}
+		WHERE
+		MEM_NO= #{memNo}
+	</update>
+	
+	<delete id="deleteMember" parameterType="MemberVO">
+		delete from member where MEM_NO = #{memNo}
+	</delete>
+	
+
+</mapper>

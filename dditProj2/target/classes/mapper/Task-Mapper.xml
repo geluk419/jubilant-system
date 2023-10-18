@@ -1,0 +1,322 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ddit.proj.mapper.TaskMapper">
+	<resultMap type="com.ddit.proj.vo.TaskSubmitVO" id="taskSubmitMap">
+		<result property="tsubCode" column="TSUB_CODE" />
+		<result property="taskCode" column="TASK_CODE" />
+		<result property="memNo" column="MEM_NO" />
+		<result property="tsubDt" column="TSUB_DT" />
+		<result property="tsubCon" column="TSUB_CON" />
+		<result property="codeTsubScore" column="CODE_TSUB_SCORE" />
+		<result property="tsubUpdde" column="TSUB_UPDDE" />
+		<result property="fileId" column="FILE_ID" />
+	</resultMap>
+	
+	
+	
+	<!-- 강의코드,강의 이름 가져오기  -->
+	<select id="getLecCode" parameterType="String" resultType="TaskVO">
+		SELECT A.LEC_CODE , B.LECA_NM 
+			FROM LECTURE A, LEC_APPLY B, PROFESSOR C
+			WHERE A.LECA_ID =B.LECA_ID AND C.MEM_NO = #{memNo}
+	</select>
+	
+    <!-- 해당 강의 과제 목록 가져오기 -->
+	<select id="getTaskList" parameterType="String" resultType="TaskVO">
+		SELECT 
+			TASK_CODE
+			,LEC_CODE
+			,TASK_NM
+			,TASK_CON
+			,TO_CHAR(TASK_DE, 'YYYY-MM-DD') AS TASK_DE
+			,TO_CHAR(TASK_DEAD, 'YYYY-MM-DD') AS TASK_DEAD             
+			,TASK_SCORE
+			,TASK_DEL_YN
+			,TO_CHAR(TASK_UPDDE, 'YYYY-MM-DD') AS TASK_UPDDE
+			,TASK_DEAD_YN
+			,FILE_ID
+			FROM TASK 
+		WHERE LEC_CODE = #{lecCode} AND TASK_DEL_YN = 'N'
+		ORDER BY TASK_DE DESC
+	</select>
+	
+	 <!-- 과제 정보를 데이터베이스에 삽입 
+	 TaskVO(taskCode=null, lecCode=3, taskNm=d, taskCon=asfd, taskDe=null, taskDead=2023-09-15
+	, taskScore=10, taskDelYn=null, taskUpdde=null, taskDeadYn=null, fileId=null, lecaNm=null
+	, taskFiles=[org.springframework.web.multipart.support.StandardMultipartHttpServletRequest$StandardMultipartFile@4a4ae485])
+	 -->
+    <insert id="insertTask" parameterType="TaskVO">
+    <selectKey resultType="String" order="BEFORE" keyProperty="fileId">
+    	 SELECT 'task' ||  (NVL(MAX(TO_NUMBER(SUBSTR(FILE_ID, 5))), 0) + 1) FROM TASK
+    </selectKey>
+    INSERT INTO TASK(TASK_CODE
+		,LEC_CODE
+		,TASK_NM
+		,TASK_CON
+		,TASK_DE
+		,TASK_DEAD
+		,TASK_SCORE
+		,TASK_DEL_YN
+		,TASK_UPDDE
+		,TASK_DEAD_YN
+		,FILE_ID)
+		VALUES((SELECT 'taskCode' ||  (NVL(MAX(TO_NUMBER(SUBSTR(TASK_CODE, 9))), 0) + 1) FROM TASK)
+		,#{lecCode}
+		,#{taskNm}
+		,#{taskCon}
+		,SYSDATE
+		,TO_DATE(#{taskDead}, 'YYYY-MM-DD')
+		,#{taskScore}
+		,'N'
+		,''
+		,'N'
+		,#{fileId}
+		)    
+    </insert>
+    
+    <!-- 첨부파일 등록  -->
+    <insert id="insertAttach" parameterType="AttachVO">
+    	INSERT INTO ATTACH
+			(FILE_ID
+			, FILE_NO
+			, FILE_PATH
+			, FILE_NM
+			, FILE_ORI_NM
+			, FILE_EXTSN
+			, FILE_SIZE
+			, FILE_DT
+			, FILE_THUMB_IMG)
+			VALUES
+			(#{fileId}
+			,(SELECT NVL(MAX(FILE_NO),0)+1 FROM ATTACH)
+			,#{filePath}
+			,#{fileNm}
+			,#{fileOriNm}
+			,#{fileExtsn}
+			,#{fileSize}
+			,SYSDATE
+			,'NULL')
+    </insert>
+    
+    <!-- 과제게시판 수정 -->
+    <update id="updateTask" parameterType="TaskVO">
+    	UPDATE TASK
+			SET TASK_NM = #{taskNm}
+			,TASK_CON = #{taskCon}
+			,TASK_DEAD = TO_DATE(#{taskDead}, 'YYYY-MM-DD')
+			,TASK_SCORE = #{taskScore}
+			,TASK_UPDDE= SYSDATE
+		WHERE TASK_CODE = #{taskCode}
+    </update>
+    
+   	<!-- 과제삭제 -->
+	 <update id="deleteTask" parameterType="TaskVO">
+	 	UPDATE TASK
+	 		SET TASK_DEL_YN ='Y'
+	 	WHERE TASK_CODE = #{taskCode} 
+	 </update>  
+	 
+    
+    <!-- 해당 학생이 제출한 과제 목록 -->
+    <select id="getTaskListByStu" parameterType="String" resultType="TaskSubmitVO">
+		SELECT
+		    tsub_code,
+		    task_code,
+		    mem_no,
+		    tsub_dt,
+		    tsub_con,
+		    code_tsub_score,
+		    tsub_updde,
+		    file_id
+		FROM
+		    task_submit
+		WHERE
+		    mem_no = #{memNo}
+	</select>
+	
+	<!-- 해당 학생이 제출한 과제 상세보기 -->
+    <select id="taskDetailByStu" parameterType="TaskSubmitVO" resultType="TaskSubmitVO">
+	SELECT
+	    ts.tsub_code,
+	    ts.task_code,
+	    ts.mem_no,
+	    ts.tsub_dt,
+	    ts.tsub_con,
+	    ts.code_tsub_score,
+	    ts.tsub_updde,
+	    ts.file_id,
+	    a.file_ori_nm,
+	    a.file_extsn,
+	    a.file_size,
+	    m.mem_nm
+	FROM
+	    task_submit ts
+	    LEFT JOIN attach      a ON ts.file_id = a.file_id
+	    LEFT JOIN member      m ON m.mem_no = ts.mem_no
+	WHERE
+	        ts.mem_no = #{memNo}
+	    AND ts.task_code = #{taskCode}
+	</select>
+
+    <!-- 해당 과제 상세보기 -->
+    <select id="taskDetail" parameterType="String" resultType="TaskVO">
+		SELECT
+		    task_code,
+		    lec_code,
+		    task_nm,
+		    task_con,
+		    task_de,
+		    task_dead,
+		    task_score,
+		    task_del_yn,
+		    task_updde,
+		    task_dead_yn,
+		    file_id
+		FROM
+		    task
+		WHERE
+		    task_code = #{taskCode}
+	</select>
+    
+    
+    <!-- 과제상세 > 제출 -->
+    <insert id="submitTask" parameterType="TaskSubmitVO">
+    <selectKey resultType="String" order="BEFORE" keyProperty="tsubCode">
+    	 SELECT
+		    to_number(nvl(MAX(to_number(tsub_code)), 0) + 1)
+		FROM
+		    task_submit
+    </selectKey>
+    	INSERT INTO task_submit (
+		    tsub_code,
+		    task_code,
+		    mem_no,
+		    tsub_dt,
+		    <if test="fileId != null">
+	        file_id,
+	     	</if>
+		    tsub_con
+		) VALUES (
+		    #{tsubCode},
+		    #{taskCode},
+		    #{memNo},
+		    sysdate,
+		    <if test="fileId != null">
+		    #{fileId},
+		    </if>
+		    #{tsubCon}
+		)
+    </insert>
+    
+    <!-- 과제상세 > 수정 -->
+    <update id="updateTaskDetail" parameterType="TaskSubmitVO">
+		UPDATE task_submit
+		SET
+			file_id = #{fileId},
+		    tsub_con = #{tsubCon},
+		    tsub_updde = sysdate
+		WHERE
+		    task_code = #{taskCode}
+		    and mem_no = #{memNo}
+    </update>
+    
+    <!-- 과제상세 > 삭제 -->
+	<delete id="deleteTaskDetail" parameterType="String">
+    DELETE FROM task_submit
+	WHERE
+	    tsub_code = #{tsubCode}
+    </delete>
+    
+    <!-- 해당 과제 TASK테이블 조회 -->
+    <select id="getTask" parameterType="String" resultType="TaskVO">
+    SELECT
+	    task_code,
+	    lec_code,
+	    task_nm,
+	    task_con,
+	    task_de,
+	    task_dead,
+	    task_score,
+	    task_del_yn,
+	    task_updde,
+	    task_dead_yn,
+	    file_id
+	FROM
+	    task
+	WHERE
+	    task_code = #{taskCode}
+    </select>
+    
+    <!-- 해당 과제 TASK_SUBMIT테이블 조회 -->
+    <select id="getTaskSubmit" parameterType="String" resultType="TaskSubmitVO">
+    SELECT
+	    ts.tsub_code,
+	    ts.task_code,
+	    ts.mem_no,
+	    ts.tsub_dt,
+	    ts.tsub_con,
+	    ts.code_tsub_score,
+	    ts.tsub_updde,
+	    ts.file_id,
+	    m.mem_nm
+	FROM
+	         task_submit ts
+	    INNER JOIN member m ON m.mem_no = ts.mem_no
+	WHERE
+	    task_code = #{taskCode}
+    </select>
+    
+     <!-- 과제상세 > 점수 등록 -->
+    <update id="taskScoreUpdate" parameterType="TaskSubmitVO">
+		UPDATE task_submit
+		SET
+		    code_tsub_score = #{codeTsubScore}
+		WHERE
+		        task_code = #{taskCode}
+		    AND mem_no =#{memNo}
+    </update>
+    
+    <!-- 제출 첨부파일 등록 -->
+	<insert id="insertSubmitAttach" parameterType="AttachVO">
+		<selectKey order="BEFORE" keyProperty="fileId" resultType="string">
+			SELECT
+			    'tasksubmit'
+			    || ( nvl(MAX(to_number(substr(file_id, 11))), 0) + 1 )
+			FROM
+			    task_submit
+		</selectKey>
+	
+    INSERT INTO attach (
+        file_id,
+        file_no,
+        file_path,
+        file_nm,
+        file_ori_nm,
+        file_extsn,
+        file_size,
+        file_dt,
+        file_del_yn,
+        file_thumb_img
+    ) VALUES (
+        #{fileId},
+        (
+            SELECT
+                nvl(MAX(file_no), 0) + 1
+            FROM
+                attach
+        ),
+        #{filePath},
+        #{fileNm},
+        #{fileOriNm},
+        #{fileExtsn},
+        #{fileSize},
+        sysdate,
+        'N',
+        'NULL'
+    )
+	</insert>
+      
+</mapper>
+
+
+

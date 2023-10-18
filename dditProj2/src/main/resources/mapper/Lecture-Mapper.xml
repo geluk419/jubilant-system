@@ -1,0 +1,413 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ddit.proj.mapper.LectureMapper">
+
+	<resultMap type="com.ddit.proj.vo.LecApplyVO"
+		id="LecApplyMap">
+		<result property="lecaId" column="LECA_ID" />
+		<result property="memNo" column="MEM_NO" />
+		<result property="subCode" column="SUB_CODE" />
+		<result property="lecaYr" column="LECA_YR" />
+		<result property="lecaSem" column="LECA_SEM" />
+		<result property="lecaNm" column="LECA_NM" />
+		<result property="lecaSeCode" column="LECA_SE_CODE" />
+		<result property="lecaTrg" column="LECA_TRG" />
+		<result property="lecaCrd" column="LECA_CRD" />
+		<result property="lecaCount" column="LECA_COUNT" />
+		<result property="lecaCap" column="LECA_CAP" />
+		<result property="lecaDt" column="LECA_DT" />
+		<result property="lecaStdCode" column="LECA_STD_CODE" />
+		<collection property="lectureVOList" resultMap="lectureMap"></collection>
+	</resultMap>
+
+	<resultMap type="com.ddit.proj.vo.LectureVO" id="lectureMap">
+		<result property="lecCode" column="LEC_CODE" />
+		<result property="subCode" column="SUB_CODE" />
+		<result property="lecaId" column="LECA_ID" />
+		<result property="lecStatYn" column="LEC_STAT_YN" />
+		<result property="lecHcnt" column="LEC_HCNT" />
+		<result property="lecYn" column="LEC_YN" />
+		<result property="lecDelYn" column="LEC_DEL_YN" />
+		<result property="roomNo" column="ROOM_NO" />
+		<result property="bldCode" column="BLD_CODE" />
+		<collection property="lectureDetailVO"
+			resultMap="lectureDetailMap"></collection>
+	</resultMap>
+
+	<resultMap type="com.ddit.proj.vo.LectureDetailVO"
+		id="lectureDetailMap">
+		<result property="lecdNo" column="LECD_NO" />
+		<result property="lecCode" column="LEC_CODE" />
+		<result property="lecdWeek" column="LECD_WEEK" />
+		<result property="lecdSt" column="LECD_ST" />
+		<result property="lecdEt" column="LECD_ET" />
+	</resultMap>
+
+	<resultMap type="com.ddit.proj.vo.MemberVO" id="MemberMap">
+		<result property="memMl" column="MEM_ML" />
+		<result property="memBankCode" column="MEM_BANK_CODE" />
+		<result property="memDepo" column="MEM_DEPO" />
+		<result property="memPic" column="MEM_PIC" />
+		<result property="memAddr2" column="MEM_ADDR2" />
+		<result property="memAddr1" column="MEM_ADDR1" />
+		<result property="memZip" column="MEM_ZIP" />
+		<result property="memTel2" column="MEM_TEL2" />
+		<result property="memTel" column="MEM_TEL" />
+		<result property="memNme" column="MEM_NME" />
+		<result property="memNm" column="MEM_NM" />
+		<result property="memDelYn" column="MEM_DEL_YN" />
+		<result property="memPass" column="MEM_PASS" />
+		<result property="memNo" column="MEM_NO" />
+		<result property="memBir" column="MEM_BIR" />
+		<collection property="professorVO" resultMap="ProfessorMap"></collection>
+		<collection property="departmentVO" resultMap="departMap"></collection>
+	</resultMap>
+
+	<resultMap type="com.ddit.proj.vo.ProfessorVO"
+		id="ProfessorMap">
+		<result property="memNo" column="MEM_NO" />
+		<result property="depCode" column="DEP_CODE" />
+		<result property="proPosYN" column="PRO_POS_YN" />
+		<result property="codeProStat" column="CODE_PRO_STAT" />
+	</resultMap>
+
+	<resultMap type="com.ddit.proj.vo.DepartmentVO" id="departMap">
+		<result property="memNo" column="MEM_NO" />
+		<result property="depDelYn" column="DEP_DEL_YN" />
+		<result property="depTel" column="DEP_TEL" />
+		<result property="depCap" column="DEP_CAP" />
+		<result property="depDrhf" column="DEP_DRHF" />
+		<result property="depDc" column="DEP_DC" />
+		<result property="depNm" column="DEP_NM" />
+		<result property="colCode" column="COL_CODE" />
+		<result property="depCode" column="DEP_CODE" />
+	</resultMap>
+	
+	<resultMap type="com.ddit.proj.vo.BuildingVO" id="buildMap">
+		<result property="bldCode" column="BLD_CODE" />
+		<result property="colCode" column="COL_CODE" />
+		<result property="bldNm" column="BLD_NM" />
+		<collection property="roomVO" resultMap="roomMap"></collection>
+	</resultMap>
+	
+	<resultMap type="com.ddit.proj.vo.RoomVO" id="roomMap">
+		<result property="roomNo" column="ROOM_NO" />
+		<result property="bldCode" column="BLD_CODE" />
+		<result property="roomCap" column="ROOM_CAP" />
+	</resultMap>
+	
+	<!-- 로그인 한 교수의 연도/학기 정보 불러오기 -->
+	<select id="getYrsem" parameterType="String" resultType="LecApplyVO">
+		SELECT distinct	b.LECA_YR, b.LECA_SEM
+		FROM LEC_APPLY b
+		LEFT JOIN LECTURE a
+		ON b.LECA_ID = a.LECA_ID
+		LEFT JOIN LECTURE_DETAIL c
+		ON a.LEC_CODE = c.LEC_CODE
+		where b.MEM_NO = #{memNo}
+	</select>
+	
+	<!-- 강의정보 불러오기 -->
+	<select id="listLecture" parameterType="String"
+		resultMap="LecApplyMap">
+		SELECT
+		b.MEM_NO, b.SUB_CODE, b.LECA_YR, b.LECA_SEM, b.LECA_NM, b.LECA_SE_CODE,
+		b.LECA_TRG, b.LECA_CRD, b.LECA_COUNT, b.LECA_CAP, b.LECA_DT,
+		b.LECA_STD_CODE, b.LECA_ID,
+		a.LEC_CODE, a.SUB_CODE, a.LECA_ID, a.LEC_STAT_YN, a.LEC_HCNT, a.LEC_YN,
+		a.LEC_DEL_YN, a.ROOM_NO, a.BLD_CODE,
+		c.LECD_WEEK, c.LECD_ST, c.LECD_ET
+		FROM LEC_APPLY b
+		LEFT JOIN LECTURE a
+		ON b.LECA_ID = a.LECA_ID
+		LEFT JOIN LECTURE_DETAIL c
+		ON a.LEC_CODE = c.LEC_CODE
+		where b.MEM_NO = #{memNo}
+		ORDER BY b.LECA_DT
+	</select>
+	
+	<!-- 강의정보 셀렉별 불러오기 
+	//LecApplyVO(lecaId=null, memNo=202008P003, subCode=null, lecaYr=2023
+	//, lecaSem=2, lecaNm=null, lecaSeCode=null, lecaTrg=0, lecaCrd=0, lecaTime=0, lecaCap=0, lecaDt=null, lecaStdCode=null, lecaYn=null, lectureVOList=null)
+	-->
+	<select id="listSelLecture" parameterType="LecApplyVO" resultMap="LecApplyMap">
+		SELECT 
+		b.LECA_ID, b.LECA_YR, b.LECA_SEM, b.LECA_NM, b.LECA_SE_CODE,b.LECA_TRG, b.LECA_CRD, b.LECA_COUNT, b.LECA_CAP, b.LECA_DT,b.LECA_STD_CODE,
+		a.LEC_CODE, a.SUB_CODE, a.LEC_STAT_YN, a.LEC_HCNT, a.LEC_YN,a.LEC_DEL_YN, a.ROOM_NO, a.BLD_CODE,
+		c.LECD_WEEK, c.LECD_ST, c.LECD_ET
+		FROM LEC_APPLY b LEFT JOIN LECTURE a ON(b.LECA_ID = a.LECA_ID)
+                         LEFT JOIN LECTURE_DETAIL c ON (a.LEC_CODE = c.LEC_CODE)
+		where b.MEM_NO = #{memNo} and a.lec_del_yn = 'N'
+		<if test="lecaYr!=null and lecaYr!=''">
+			and b.LECA_YR = #{lecaYr} and b.LECA_SEM = #{lecaSem}
+		</if>
+		ORDER BY b.LECA_DT
+	</select>
+	
+	<!-- 강의실호수 건물 이름 셀렉트 옵션에 넣기   -->
+	<select id="getBuildRoom" resultMap="buildMap">
+		SELECT
+			a.BLD_NM,
+			a.BLD_CODE,
+			b.ROOM_NO
+		FROM BUILDING a
+		LEFT JOIN ROOM b
+			ON a.BLD_CODE = b.BLD_CODE
+	</select>
+	
+	<!-- 강의실호수 건물 이름 셀렉트 옵션에 넣기   -->
+	<select id="getRoomNo" parameterType="String" resultMap="buildMap">
+		SELECT
+			a.BLD_NM,
+			a.BLD_CODE,
+			b.ROOM_NO
+		FROM BUILDING a
+		LEFT JOIN ROOM b
+			ON a.BLD_CODE = b.BLD_CODE
+			where a.BLD_CODE =#{bldCode}
+	</select>
+	
+	
+	<!-- 교수 정보 불러오기 -->
+	<select id="getProf" parameterType="String"
+		resultMap="MemberMap">
+		SELECT
+		    a.MEM_NO, a.MEM_PASS, a.MEM_DEL_YN, a.MEM_NM, a.MEM_NME, a.MEM_TEL, a.MEM_TEL2,
+		    a.MEM_ZIP, a.MEM_ADDR1, a.MEM_ADDR2, a.MEM_PIC, a.MEM_DEPO,
+		    a.MEM_BANK_CODE, a.MEM_ML,a.MEM_BIR,
+		    b.DEP_CODE, 
+		    CASE
+		        WHEN b.PRO_POS_YN = 'Y' THEN '학과장'
+		        WHEN b.PRO_POS_YN = 'N' THEN '교수'
+		        ELSE ''
+		    END AS PRO_POS_YN,
+		    CASE
+		        WHEN b.CODE_PRO_STAT = '01' THEN '재직중'
+		        ELSE ''
+		    END AS CODE_PRO_STAT,
+		    (SELECT c.DEP_NM
+		    FROM DEPARTMENT c
+		    WHERE b.DEP_CODE = c.DEP_CODE) AS DEP_NM,
+		    (SELECT c.DEP_TEL
+		    FROM DEPARTMENT c
+		    WHERE b.DEP_CODE = c.DEP_CODE) AS DEP_TEL
+		FROM MEMBER a
+		INNER JOIN PROFESSOR b
+		ON a.MEM_NO = b.MEM_NO
+		WHERE a.MEM_NO = #{memNo}
+	</select>
+
+	<!-- 강의자료(강의게시판) 
+	<select id="listLecNotice" resultType="LecNoticeVO">
+		SELECT LECN_CODE, LEC_CODE, LECN_CATA_CODE, LECN_TTL, LECN_CON, LECN_DE, LECN_UPDDE, FILE_ID 
+		FROM lec_notice
+		ORDER BY LECN_DE ASC
+	</select>
+	-->
+	
+	<select id="getLecNoticeVO" parameterType="searchVO" resultType="LecNoticeVO">
+		SELECT
+		    l.lecn_code,
+		    l.lec_code,
+		    l.lecn_cata_code,
+		    l.lecn_ttl,
+		    l.lecn_con,
+		    l.lecn_de,
+		    l.lecn_updde,
+		    l.file_id,
+		    a.file_path
+		FROM
+		    lec_notice l,
+		    attach     a
+		WHERE
+		        lec_code = #{lecCode}
+		    AND l.file_id = a.file_id
+		    <trim prefix="AND">
+			    <choose>
+			    	<when test='"t".equals(searchCondition)'>
+			    	l.lecn_ttl LIKE '%' || #{searchWord} || '%'
+			    	</when>
+			    	<when test='"c".equals(searchCondition)'>
+			    	l.lecn_con LIKE '%' || #{searchWord} || '%'
+			    	</when>
+			    	<otherwise>
+				    ( l.lecn_ttl LIKE '%' || #{searchWord} || '%'
+				          OR l.lecn_con LIKE '%' || #{searchWord} || '%' )
+			    	</otherwise>
+			    </choose>
+		    </trim>
+		ORDER BY
+		    lecn_de ASC
+	</select>
+	
+	<!-- 강의계회석 평가기준 -->
+	<select id="leesCode" resultType="LecApplyVO">
+	SELECT CODE_ID, CODE_NM
+		FROM CODE
+		WHERE GROUP_ID = 'LEES' AND CODE_YN = 'Y'
+		AND GROUP_ID IN (SELECT GROUP_ID FROM GROUP_CODE WHERE GROUP_YN = 'Y')
+	</select>
+	
+	<!-- 강의 계획서 등록 -->
+	<insert id="insertApply" parameterType="LecApplyVO">
+		<selectKey resultType="String" order="BEFORE" keyProperty="lecaId">
+			SELECT 'lecaId' ||  (NVL(MAX(TO_NUMBER(SUBSTR(LECA_ID, 7))), 0) + 1) FROM LEC_APPLY
+		</selectKey>
+		INSERT INTO LEC_APPLY(
+		LECA_ID
+		, MEM_NO
+		, SUB_CODE
+		, LECA_YR
+		, LECA_SEM
+		, LECA_NM
+		, LECA_SE_CODE
+		, LECA_TRG
+		, LECA_CRD
+		, LECA_COUNT
+		, LECA_CAP
+		, LECA_DT
+		, LECA_STD_CODE
+		)
+		VALUES(
+		     #{lecaId}
+		    ,#{memNo}
+		    ,#{subCode}
+		    ,#{lecaYr}
+		    ,#{lecaSem}
+			,#{lecaNm}
+			,#{lecaSeCode}
+			,#{lecaTrg}
+			,#{lecaCrd}
+			,#{lecaCount}
+			,#{lecaCap}
+			,SYSDATE
+			,#{lecaStdCode}
+		)
+	</insert>
+	
+	<!-- 강의 등록 -->
+	<insert id="insertLecture" parameterType="LectureVO">
+		<selectKey resultType="String" order="BEFORE" keyProperty="lecCode">
+			SELECT LPAD(NVL(MAX(TO_NUMBER(LEC_CODE)), 0) + 1, 3, '0') AS NEW_LEC_CODE FROM LECTURE
+		</selectKey>
+		INSERT INTO LECTURE(
+			LEC_CODE
+			, SUB_CODE
+			, LECA_ID
+			, ROOM_NO
+			, BLD_CODE
+			)
+			VALUES(
+			 #{lecCode}
+			,#{subCode}
+			,#{lecaId}
+			,#{roomNo}
+			,#{bldCode}
+		)
+	</insert>
+	
+	<!-- 강의요일 시간 등록 -->
+	<insert id="insertLectureDetail" parameterType="LectureDetailVO">
+	INSERT INTO LECTURE_DETAIL(
+		LECD_NO
+		,LEC_CODE
+		, LECD_WEEK
+		, LECD_ST
+		, LECD_ET
+		)
+		VALUES(
+		(SELECT NVL(MAX(LECD_NO),0)+1 FROM LECTURE_DETAIL)
+		,#{lecCode}
+		,#{lecdWeek}
+		,#{lecdSt}
+		,#{lecdEt}
+		)
+	</insert>
+	
+	<!-- 과목가져오기 -->
+	<select id="listSubj" resultType="SubjectVO">
+		SELECT s.sub_code
+			 , d.dep_nm
+			 , s.dep_code
+			 , s.sub_nm
+			 , s.sub_yr
+			 , s.sub_se_code
+			 , s.sub_del_yn 
+		FROM subject s
+		INNER JOIN department d ON s.dep_code = d.dep_code
+		WHERE sub_del_yn = 'N'
+	</select>
+	
+	<!-- 강의 계획서 수정 -->
+	<update id="updateApply" parameterType="LecApplyVO">
+		UPDATE LEC_APPLY
+		SET
+		 SUB_CODE = #{subCode}
+		, LECA_YR = #{lecaYr}
+		, LECA_SEM = #{lecaSem}
+		, LECA_NM = #{lecaNm}
+		, LECA_SE_CODE = #{lecaSeCode}
+		, LECA_TRG = #{lecaTrg}
+		, LECA_CRD = #{lecaCrd}
+		, LECA_COUNT = #{lecaCount}
+		, LECA_CAP = #{lecaCap}
+		, LECA_STD_CODE = #{lecaStdCode}
+		WHERE 
+		LECA_ID = #{lecaId}
+	</update>
+	
+	<!-- 강의 수정 -->
+	<update id="updateLecture" parameterType="LectureVO">
+		UPDATE LECTURE
+			SET
+			 SUB_CODE = #{subCode}
+			, ROOM_NO = #{roomNo} 
+			, BLD_CODE = #{bldCode}
+			WHERE LEC_CODE = #{lecCode}
+	</update>
+	
+	<!-- 강의요일 시간 수정 -->
+	<delete id="deleteLectureDetail" parameterType="LectureDetailVO">
+	DELETE FROM LECTURE_DETAIL
+		WHERE LEC_CODE = #{lecCode}
+	</delete>
+	
+	<!-- 강의 삭제  -->
+	<update id="deleteLec" parameterType="String">
+	UPDATE LECTURE
+	SET 
+	LEC_DEL_YN = 'Y'
+	WHERE LECA_ID = #{lecaId}
+	</update>
+	
+	
+	<!-- 중복시간표  -->
+	<select id="getTime" parameterType="LectureVO" resultType="LectureDetailVO">
+		SELECT 
+			A.LECD_WEEK
+			,A.LECD_ST
+			,A.LECD_ET
+		FROM 
+			LECTURE_DETAIL A
+			,LECTURE B
+			,LEC_APPLY C
+		WHERE B.BLD_CODE = #{bldCode} 
+			AND B.ROOM_NO = #{roomNo}
+			AND C.LECA_YR = #{lecaYr}
+			AND C.LECA_SEM = #{lecaSem}
+			AND A.LEC_CODE = B.LEC_CODE
+			AND C.LECA_ID = B.LECA_ID
+	</select>
+		
+</mapper>
+
+
+
+
+
+
+
+
+
+
+
